@@ -65,8 +65,13 @@
   .toolbar .zoomctl button{border:none;background:none;color:var(--cyan-bright);font-size:17px;line-height:1;padding:2px 8px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
   .toolbar .zoomctl button:hover{background:rgba(74,216,255,.18);}
   .toolbar .zoomctl #zoomReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:44px;text-align:center;color:var(--text);}
-  body:not(.guides) .toolbar{padding:7px 12px;}
-  body:not(.guides) .toolbar .hint{display:none;}
+  body:not(.guides) .toolbar{display:none;}
+  body:not(.guides) .reopen{display:block;}
+  .reopen{position:fixed;top:12px;left:12px;z-index:50;display:none;
+    font-family:'Chakra Petch',sans-serif;background:rgba(74,216,255,.16);color:var(--cyan-bright);
+    border:1px solid var(--cyan-dim);border-radius:7px;padding:6px 13px;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
+  .reopen:hover{background:rgba(74,216,255,.30);}
 
   /* ---- the bulletin (this is what you screenshot) ---- */
   .frame{
@@ -213,10 +218,11 @@
 <body class="guides">
 
   <div class="toolbar">
-    <div class="hint"><b>How to use:</b> click any text to edit it, type your weekly content. Use <b>&minus; / +</b> to scale the bulletin up for a larger, sharper image, then click <b>Hide edit guides</b> and screenshot just the bulletin below (Windows: <b>Win + Shift + S</b>). This bar won't appear in the screenshot.</div>
+    <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. Use <b>&minus; / +</b> to scale up for a sharper image. When you're ready, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
     <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
-    <button id="toggle">Hide edit guides</button>
+    <button id="hideBtn">Clean view</button>
   </div>
+  <button id="showBtn" class="reopen" type="button">&#9998; Edit</button>
 
   <div class="frame">
     <div class="frame-inner">
@@ -325,11 +331,8 @@
   </div>
 
 <script>
-  const btn=document.getElementById('toggle');
-  btn.addEventListener('click',()=>{
-    const on=document.body.classList.toggle('guides');
-    btn.textContent=on?'Hide edit guides':'Show edit guides';
-  });
+  document.getElementById('hideBtn').addEventListener('click',()=>document.body.classList.remove('guides'));
+  document.getElementById('showBtn').addEventListener('click',()=>document.body.classList.add('guides'));
 
   let zoomScale=1;
   const frameEl=document.querySelector('.frame');

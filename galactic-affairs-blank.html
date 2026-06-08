@@ -44,8 +44,13 @@
   .toolbar .zoomctl button{border:none;background:none;color:var(--cyan-bright);font-size:17px;line-height:1;padding:2px 8px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
   .toolbar .zoomctl button:hover{background:rgba(74,216,255,.18);}
   .toolbar .zoomctl #zoomReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:44px;text-align:center;color:var(--text);}
-  body.clean .toolbar{padding:7px 12px;}
-  body.clean .toolbar .hint{display:none;}
+  body.clean .toolbar{display:none;}
+  body.clean .reopen{display:block;}
+  .reopen{position:fixed;top:12px;left:12px;z-index:50;display:none;
+    font-family:'Chakra Petch',sans-serif;background:rgba(74,216,255,.16);color:var(--cyan-bright);
+    border:1px solid var(--cyan-dim);border-radius:7px;padding:6px 13px;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
+  .reopen:hover{background:rgba(74,216,255,.30);}
 
   /* frame */
   .frame{
@@ -136,7 +141,7 @@
 <body>
 
   <div class="toolbar">
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use <b>&minus; / +</b> to scale the whole bulletin up for a larger, sharper screenshot. When finished, click <b>Clean view</b> to hide the editing guides, then screenshot the bulletin (Win + Shift + S). Add an image with the button or by dragging a file onto the canvas.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use <b>&minus; / +</b> to scale up for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings the toolbar back.</div>
     <button id="addTitle">+ Title</button>
     <button id="addSub">+ Subtitle</button>
     <button id="addBody">+ Text</button>
@@ -145,6 +150,7 @@
     <button id="cleanBtn" class="clean">Clean view (for screenshot)</button>
     <input id="fileInput" type="file" accept="image/*" hidden>
   </div>
+  <button id="reopenBtn" class="reopen" type="button">&#9998; Edit</button>
 
   <div class="frame">
     <div class="frame-inner">
@@ -263,8 +269,8 @@
   canvas.addEventListener('dragover',(e)=>{e.preventDefault();});
   canvas.addEventListener('drop',(e)=>{e.preventDefault(); const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) addImageFromFile(f);});
 
-  const cleanBtn=document.getElementById('cleanBtn');
-  cleanBtn.onclick=()=>{ const on=document.body.classList.toggle('clean'); cleanBtn.textContent=on?'Back to editing':'Clean view (for screenshot)'; };
+  document.getElementById('cleanBtn').onclick=()=>document.body.classList.add('clean');
+  document.getElementById('reopenBtn').onclick=()=>document.body.classList.remove('clean');
 
   const frameEl=document.querySelector('.frame');
   const zoomReadout=document.getElementById('zoomReadout');
