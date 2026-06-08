@@ -164,12 +164,12 @@
     color:var(--text);margin:3px 0 0;opacity:.92;
   }
   .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));
-    box-shadow:0 0 8px rgba(74,216,255,.5);margin:14px 0 18px;}
+    box-shadow:0 0 8px rgba(74,216,255,.5);margin:16px 0 22px;}
 
   .lead{
     background:linear-gradient(180deg,rgba(74,216,255,.07),rgba(74,216,255,.02));
     border:1px solid var(--line);border-left:3px solid var(--cyan);
-    padding:16px 20px;margin-bottom:16px;
+    padding:18px 22px;margin-bottom:24px;
   }
   .lead h2{
     font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
@@ -178,26 +178,6 @@
   }
   .lead p{font-size:15px;line-height:1.62;margin:0 0 9px;color:var(--text);}
   .lead p:last-child{margin-bottom:0;}
-
-  .focus{
-    background:linear-gradient(180deg,rgba(230,185,74,.10),rgba(230,185,74,.02));
-    border:1px solid rgba(230,185,74,.4);border-left:3px solid var(--gold);
-    padding:14px 20px;margin-bottom:20px;
-    display:flex;gap:18px;align-items:center;
-  }
-  .focus .badge{
-    font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;
-    letter-spacing:.28em;text-transform:uppercase;color:var(--gold);
-    writing-mode:vertical-rl;transform:rotate(180deg);
-    border-right:1px solid rgba(230,185,74,.4);padding-right:12px;
-    text-shadow:0 0 8px rgba(230,185,74,.4);
-  }
-  .focus .body{flex:1;}
-  .focus .who{
-    font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:21px;
-    color:var(--gold);margin:0 0 3px;text-shadow:0 0 10px rgba(230,185,74,.3);
-  }
-  .focus .why{font-size:14.5px;line-height:1.55;color:var(--text);margin:0;}
 
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
   .col h3{
@@ -211,10 +191,10 @@
   .grp{
     font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13.5px;
     letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);
-    margin:13px 0 4px;text-shadow:0 0 7px rgba(74,216,255,.35);
+    margin:16px 0 5px;text-shadow:0 0 7px rgba(74,216,255,.35);
   }
-  .grp:first-of-type{margin-top:6px;}
-  .row{font-size:14px;line-height:1.5;color:var(--text);margin:2px 0;}
+  .grp:first-of-type{margin-top:8px;}
+  .row{font-size:14px;line-height:1.55;color:var(--text);margin:3px 0;}
   .row .n{color:var(--cyan-bright);font-weight:500;}
   .row .arrow{color:var(--gold);}
   [data-ph]:empty::after{content:attr(data-ph);color:var(--text-dim);font-style:italic;opacity:.6;}
@@ -347,14 +327,6 @@
         <h2 contenteditable="true">Note From Our Editors</h2>
         <p contenteditable="true" data-ph="[Input personal message]"></p>
         <p contenteditable="true">The Assembly Tribune is always looking for new additions. Interested? Join the Librarians' Assembly today, any info can be found in the channel #recruitment within the communications server! For further information, you can tag me and ask for guidance.</p>
-      </div>
-
-      <div class="focus">
-        <div class="badge">Weekly Focus</div>
-        <div class="body">
-          <p class="who" contenteditable="true">[ Member name ]</p>
-          <p class="why" contenteditable="true">A short note on the member who stood out this week and why they're being recognised. Replace this with your spotlight.</p>
-        </div>
       </div>
 
       <div class="cols">
