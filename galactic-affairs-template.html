@@ -180,6 +180,7 @@
   .row{font-size:14px;line-height:1.5;color:var(--text);margin:2px 0;}
   .row .n{color:var(--cyan-bright);font-weight:500;}
   .row .arrow{color:var(--gold);}
+  .row[data-ph]:empty::before{content:attr(data-ph);color:var(--text-dim);font-style:italic;opacity:.6;}
 
   .foot{display:flex;justify-content:space-between;align-items:flex-end;
     margin-top:24px;border-top:2px solid var(--line);padding-top:14px;}
@@ -234,8 +235,8 @@
 
       <div class="lead">
         <h2 contenteditable="true">Note From Our Editors</h2>
-        <p contenteditable="true">[Input your own message].</p>
-        <p contenteditable="true">The Assembly Tribune is always looking for new additions. Interested? Join the Librarian’s Assembly today, any info can be found in the channel #recruitment within the communications server! For further information, you can tag me and ask for guidance..</p>
+        <p contenteditable="true">This week has been lovely and we got a GWCG! Don't know about you guys but I got lime crystal. Do let me know what you've gotten and be sure to show it off.</p>
+        <p contenteditable="true">Apologies for the delay. From now on the Galactic News will be dropping on either Monday or Tuesday.</p>
       </div>
 
       <div class="focus">
@@ -252,26 +253,26 @@
           <p class="note">Group, events, best performing High Rank</p>
 
           <div class="grp" contenteditable="true">Council of First Knowledge</div>
-          <div class="row" contenteditable="true">Consulars — <span class="n">events</span>, User</div>
-          <div class="row" contenteditable="true">LA — <span class="n">events</span>, User</div>
+          <div class="row" contenteditable="true">Consulars — <span class="n">60 events</span>, FoxZOwen08</div>
+          <div class="row" contenteditable="true">LA — <span class="n">18 events</span>, Oxfordplayers</div>
 
           <div class="grp" contenteditable="true">Council of Reconciliation</div>
-          <div class="row" contenteditable="true">Sentinels — <span class="n">events</span>, User</div>
-          <div class="row" contenteditable="true">Investigators — <span class="n">events</span>, User</div>
+          <div class="row" contenteditable="true">Sentinels — <span class="n">131 events</span>, Paasmedown</div>
+          <div class="row" contenteditable="true">Investigators — <span class="n">60 events</span>, Sebi2010123</div>
 
           <div class="grp" contenteditable="true">Council of Reassignment</div>
-          <div class="row" contenteditable="true">Guardians — <span class="n">events</span>, v_An1m3</div>
-          <div class="row" contenteditable="true">JTF — <span class="n">events</span>, User</div>
+          <div class="row" contenteditable="true">Guardians — <span class="n">73 events</span>, v_An1m3</div>
+          <div class="row" contenteditable="true">JTF — <span class="n">46 events</span>, Rush_BladeZ &amp; Magicgnome88</div>
 
           <div class="grp" contenteditable="true">Community Oversight</div>
-          <div class="row" contenteditable="true">Researchers — <span class="n">events</span>, User</div>
-          <div class="row" contenteditable="true">Academy — <span class="n">events</span>, User</div>
+          <div class="row" contenteditable="true">Researchers — <span class="n">27 events</span>, goldfeesh1</div>
+          <div class="row" contenteditable="true">Academy — <span class="n">93 events</span>, Jov_Dw11</div>
 
           <div class="grp" contenteditable="true">Moderation Oversight</div>
-          <div class="row" contenteditable="true">Tribunal — <span class="n">Appeals</span></div>
+          <div class="row" contenteditable="true">Tribunal — <span class="n">14 Appeals</span></div>
 
           <div class="grp" contenteditable="true">Temple Guard Oversight</div>
-          <div class="row" contenteditable="true">TG — <span class="n">events</span>, User</div>
+          <div class="row" contenteditable="true">TG — <span class="n">95 events</span>, Hjsaewrgbd</div>
         </div>
 
         <div class="col">
@@ -279,27 +280,22 @@
           <p class="note">Temple Guardian promotions are only shown if public</p>
 
           <div class="grp" contenteditable="true">Council of First Knowledge</div>
-          <div class="row" contenteditable="true">—</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
 
           <div class="grp" contenteditable="true">Council of Reconciliation</div>
-          <div class="row" contenteditable="true">Dolce_Coco: Artisan <span class="arrow">→</span> Instructor</div>
-          <div class="row" contenteditable="true">Binxqs: Diplomat <span class="arrow">→</span> Artisan</div>
-          <div class="row" contenteditable="true">GoldAdvisory <span class="arrow">→</span> Detective</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
 
           <div class="grp" contenteditable="true">Council of Reassignment</div>
-          <div class="row" contenteditable="true">—</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
 
           <div class="grp" contenteditable="true">Community Oversight</div>
-          <div class="row" contenteditable="true">NexroHikari | Research Master</div>
-          <div class="row" contenteditable="true">goldfeesh1 | Board of Researchers</div>
-          <div class="row" contenteditable="true">racconnss: Community Director <span class="arrow">→</span> Deputy Master of the Academy</div>
-          <div class="row" contenteditable="true">o700041: Phase 1 Senior Instructor <span class="arrow">→</span> Phase 1 Chief Instructor</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
 
           <div class="grp" contenteditable="true">Moderation Oversight</div>
-          <div class="row" contenteditable="true">—</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
 
           <div class="grp" contenteditable="true">Temple Guard Oversight</div>
-          <div class="row" contenteditable="true">ZentrixSol: Senior Guardian <span class="arrow">→</span> Warden</div>
+          <div class="row" contenteditable="true" data-ph="User → Rank"></div>
         </div>
       </div>
 
