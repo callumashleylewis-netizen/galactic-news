@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic Affairs — News Templates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Saira:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#05111e;--cyan:#4ad8ff;--cyan-bright:#9fe9ff;--cyan-dim:#2f97bd;
+    --text:#e2f3fc;--text-dim:#9dc2d6;--gold:#e6b94a;--line:rgba(74,216,255,.32);--chamfer:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#000;font-family:'Saira',sans-serif;color:var(--text);
+    min-height:100vh;padding:40px 16px;display:flex;align-items:center;justify-content:center;
+  }
+  .frame{
+    width:760px;max-width:100%;background:var(--cyan);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    padding:2.5px;filter:drop-shadow(0 0 16px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
+  }
+  .inner{
+    background:
+      linear-gradient(transparent 0 calc(100% - 1px), rgba(74,216,255,.05) 0) 0 0/100% 4px,
+      radial-gradient(700px 320px at 50% -8%, rgba(74,216,255,.14), transparent 62%),var(--ink);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    position:relative;padding:42px 46px 36px;
+  }
+  .br{position:absolute;width:20px;height:20px;border:2px solid var(--cyan);opacity:.85;filter:drop-shadow(0 0 4px rgba(74,216,255,.6));}
+  .br.tl{top:11px;left:11px;border-right:0;border-bottom:0;}
+  .br.tr{top:11px;right:11px;border-left:0;border-bottom:0;}
+  .br.bl{bottom:11px;left:11px;border-right:0;border-top:0;}
+  .br.brr{bottom:11px;right:11px;border-left:0;border-top:0;}
+
+  .kicker{font-family:'Chakra Petch',sans-serif;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--cyan);opacity:.85;}
+  h1{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:46px;line-height:1;letter-spacing:.04em;
+    color:var(--cyan-bright);text-shadow:0 0 18px rgba(74,216,255,.55),0 0 3px rgba(74,216,255,.9);margin:4px 0 2px;}
+  .tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:21px;color:var(--text-dim);margin:0 0 4px;}
+  .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));box-shadow:0 0 8px rgba(74,216,255,.5);margin:16px 0 24px;}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  a.card{
+    display:block;text-decoration:none;color:inherit;
+    background:linear-gradient(180deg,rgba(74,216,255,.07),rgba(74,216,255,.02));
+    border:1px solid var(--line);padding:22px 22px 18px;transition:border-color .2s,background .2s,transform .15s;
+  }
+  a.card:hover{border-color:var(--cyan);background:linear-gradient(180deg,rgba(74,216,255,.14),rgba(74,216,255,.04));transform:translateY(-2px);}
+  a.card .ic{font-size:26px;margin-bottom:10px;}
+  a.card h2{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:19px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--cyan-bright);margin:0 0 8px;text-shadow:0 0 10px rgba(74,216,255,.4);}
+  a.card p{font-size:14px;line-height:1.55;color:var(--text);margin:0 0 14px;}
+  a.card .go{font-family:'Chakra Petch',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);}
+  a.card.blank{background:linear-gradient(180deg,rgba(230,185,74,.09),rgba(230,185,74,.02));border-color:rgba(230,185,74,.4);}
+  a.card.blank:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(230,185,74,.16),rgba(230,185,74,.04));}
+  a.card.blank h2{color:var(--gold);text-shadow:0 0 10px rgba(230,185,74,.35);}
+  a.card.blank .go{color:var(--gold);}
+
+  .note{font-family:'Saira',sans-serif;font-size:12.5px;color:var(--text-dim);line-height:1.55;margin:22px 0 0;
+    border-top:1px solid var(--line);padding-top:14px;}
+  .foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;}
+  .foot .brand{display:flex;align-items:center;gap:11px;}
+  .foot .brand svg{filter:drop-shadow(0 0 5px rgba(74,216,255,.5));}
+  .foot .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:24px;color:var(--cyan-bright);text-shadow:0 0 10px rgba(74,216,255,.4);}
+  .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
+  @media (max-width:560px){.cards{grid-template-columns:1fr;}h1{font-size:34px;}.inner{padding:30px 24px 26px;}}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="inner">
+      <span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span>
+
+      <div class="kicker">// Transmission &middot; Assembly Tribune</div>
+      <h1>Galactic Affairs</h1>
+      <p class="tagline">News templates for the Librarians' Assembly</p>
+      <div class="rule"></div>
+
+      <div class="cards">
+        <a class="card" href="galactic-affairs-template.html">
+          <div class="ic">&#9783;</div>
+          <h2>Weekly Bulletin</h2>
+          <p>The structured weekly layout: editor's note, weekly focus, statistics and promotions. Click each field and type your content.</p>
+          <span class="go">Open template &rarr;</span>
+        </a>
+        <a class="card blank" href="galactic-affairs-blank.html">
+          <div class="ic">&#9634;</div>
+          <h2>Blank Canvas</h2>
+          <p>A free-form sheet for special editions. Add text boxes and images, drag and resize them, and design the page by hand.</p>
+          <span class="go">Open canvas &rarr;</span>
+        </a>
+      </div>
+
+      <p class="note">Open these on a computer (the blank canvas needs a mouse to drag and resize), and stay connected to the internet so the fonts load correctly. Fill in your content, then screenshot the bulletin to post it.</p>
+
+      <div class="foot">
+        <div class="brand">
+          <svg width="30" height="30" viewBox="0 0 34 34" fill="none" stroke="#9fe9ff" stroke-width="1.6">
+            <rect x="3" y="7" width="20" height="20" rx="1.5"/>
+            <line x1="7" y1="12" x2="19" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/>
+            <line x1="7" y1="20" x2="14" y2="20"/><line x1="7" y1="23.5" x2="14" y2="23.5"/>
+            <rect x="16" y="16" width="3.5" height="7.5"/>
+            <circle cx="24.5" cy="20" r="6.2"/><line x1="18.3" y1="20" x2="30.7" y2="20"/><ellipse cx="24.5" cy="20" rx="2.6" ry="6.2"/>
+          </svg>
+          <div class="name">The Assembly Tribune</div>
+        </div>
+        <div class="meta">Galactic News Network<br>By patience, by record, by light</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

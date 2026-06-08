@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic Affairs — Blank Canvas (design by hand)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Saira:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#05111e;--cyan:#4ad8ff;--cyan-bright:#9fe9ff;--cyan-dim:#2f97bd;
+    --text:#e2f3fc;--text-dim:#9dc2d6;--gold:#e6b94a;
+    --line:rgba(74,216,255,.32);--chamfer:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#000;
+    font-family:'Saira',sans-serif;color:var(--text);
+    min-height:100vh;padding:28px 16px 60px;
+    display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
+
+  /* toolbar — never part of the screenshot */
+  .toolbar{
+    width:900px;max-width:100%;background:rgba(10,31,51,.7);
+    border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+    font-family:'Chakra Petch',sans-serif;font-size:13px;color:var(--text-dim);
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .toolbar b{color:var(--cyan-bright);font-weight:600;}
+  .toolbar .hint{width:100%;line-height:1.5;margin-bottom:4px;}
+  .toolbar button{
+    font-family:'Chakra Petch',sans-serif;background:rgba(74,216,255,.12);
+    color:var(--cyan-bright);border:1px solid var(--cyan-dim);border-radius:7px;
+    padding:7px 13px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+    cursor:pointer;transition:background .2s;
+  }
+  .toolbar button:hover{background:rgba(74,216,255,.24);}
+  .toolbar button.clean{margin-left:auto;border-color:var(--gold);color:var(--gold);background:rgba(230,185,74,.12);}
+  .toolbar button.clean:hover{background:rgba(230,185,74,.22);}
+  .toolbar .zoomctl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--cyan-dim);border-radius:7px;padding:2px 6px;}
+  .toolbar .zoomctl button{border:none;background:none;color:var(--cyan-bright);font-size:17px;line-height:1;padding:2px 8px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
+  .toolbar .zoomctl button:hover{background:rgba(74,216,255,.18);}
+  .toolbar .zoomctl #zoomReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:44px;text-align:center;color:var(--text);}
+  body.clean .toolbar{padding:7px 12px;}
+  body.clean .toolbar .hint{display:none;}
+
+  /* frame */
+  .frame{
+    width:900px;max-width:100%;background:var(--cyan);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    padding:2.5px;filter:drop-shadow(0 0 14px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
+  }
+  .frame-inner{
+    background:
+      linear-gradient(transparent 0 calc(100% - 1px), rgba(74,216,255,.05) 0) 0 0/100% 4px,
+      radial-gradient(900px 380px at 50% -8%, rgba(74,216,255,.12), transparent 62%),
+      var(--ink);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    position:relative;padding:28px 40px 24px 56px;
+  }
+
+  .rail{position:absolute;left:18px;top:88px;bottom:80px;width:20px;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;pointer-events:none;}
+  .rail .tick{width:12px;height:2px;background:var(--cyan);opacity:.5;box-shadow:0 0 6px rgba(74,216,255,.6);}
+  .rail .glyphs{writing-mode:vertical-rl;transform:rotate(180deg);
+    font-family:'Chakra Petch',sans-serif;font-weight:500;font-size:11px;letter-spacing:.5em;
+    color:var(--cyan);opacity:.55;text-shadow:0 0 6px rgba(74,216,255,.5);white-space:nowrap;}
+  .br{position:absolute;width:20px;height:20px;border:2px solid var(--cyan);opacity:.85;filter:drop-shadow(0 0 4px rgba(74,216,255,.6));}
+  .br.tl{top:9px;left:9px;border-right:0;border-bottom:0;}
+  .br.tr{top:9px;right:9px;border-left:0;border-bottom:0;}
+  .br.bl{bottom:9px;left:9px;border-right:0;border-top:0;}
+  .br.brr{bottom:9px;right:9px;border-left:0;border-top:0;}
+
+  .topline{display:flex;justify-content:space-between;align-items:flex-end;
+    font-family:'Chakra Petch',sans-serif;font-size:10.5px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--cyan-dim);margin-bottom:6px;}
+  .topline .left{color:var(--cyan);opacity:.85;}
+  .masthead{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:50px;line-height:.96;
+    letter-spacing:.04em;color:var(--cyan-bright);text-shadow:0 0 18px rgba(74,216,255,.55),0 0 3px rgba(74,216,255,.9);margin:0;}
+  .subhead{font-family:'Chakra Petch',sans-serif;font-weight:500;font-size:18px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text);margin:3px 0 0;opacity:.92;}
+  .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));
+    box-shadow:0 0 8px rgba(74,216,255,.5);margin:13px 0 0;}
+
+  /* the blank canvas */
+  .canvas{position:relative;min-height:560px;margin:14px 0;}
+  #grid{position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(74,216,255,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(74,216,255,.06) 1px,transparent 1px);
+    background-size:28px 28px;}
+  .empty-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Chakra Petch',sans-serif;font-size:14px;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(157,194,214,.5);pointer-events:none;text-align:center;line-height:1.8;}
+
+  /* placed elements */
+  .el{position:absolute;}
+  .el-bar{display:flex;justify-content:space-between;align-items:center;gap:6px;
+    background:rgba(74,216,255,.18);border:1px solid var(--cyan-dim);border-bottom:none;
+    font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--cyan-bright);
+    padding:2px 4px 2px 6px;cursor:move;user-select:none;text-transform:uppercase;}
+  .el-bar .del{background:none;border:none;color:#ff9a9a;font-size:15px;line-height:1;cursor:pointer;padding:0 3px;}
+  .el-box{outline:none;}
+  .el-box.text{resize:both;overflow:hidden;min-width:70px;min-height:26px;
+    border:1px dashed rgba(74,216,255,.4);padding:4px 9px;background:rgba(5,17,30,.35);color:var(--text);
+    font-family:'Saira',sans-serif;font-size:15px;line-height:1.55;}
+  .el-box.title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:30px;color:var(--cyan-bright);
+    text-shadow:0 0 12px rgba(74,216,255,.45);letter-spacing:.03em;}
+  .el-box.sub{font-family:'Chakra Petch',sans-serif;font-weight:500;font-size:18px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--text);}
+  .el-box.img{resize:both;overflow:hidden;border:1px dashed rgba(74,216,255,.4);width:260px;height:180px;}
+  .el-box.img img{width:100%;height:100%;object-fit:contain;display:block;}
+
+  /* clean view — hides every editing affordance for the screenshot */
+  body.clean .el-bar{display:none;}
+  body.clean .el-box.text{resize:none;border-color:transparent;background:transparent;}
+  body.clean .el-box.img{resize:none;border:none;}
+  body.clean #grid{display:none;}
+  body.clean .empty-hint{display:none;}
+
+  .foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px;
+    border-top:2px solid var(--line);padding-top:14px;}
+  .foot .brand{display:flex;align-items:center;gap:12px;}
+  .foot .brand svg{filter:drop-shadow(0 0 5px rgba(74,216,255,.5));}
+  .foot .brand .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:30px;
+    line-height:1;color:var(--cyan-bright);text-shadow:0 0 12px rgba(74,216,255,.4);}
+  .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10.5px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
+
+  [contenteditable]{outline:none;}
+  @media print{.toolbar{display:none;}}
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use <b>&minus; / +</b> to scale the whole bulletin up for a larger, sharper screenshot. When finished, click <b>Clean view</b> to hide the editing guides, then screenshot the bulletin (Win + Shift + S). Add an image with the button or by dragging a file onto the canvas.</div>
+    <button id="addTitle">+ Title</button>
+    <button id="addSub">+ Subtitle</button>
+    <button id="addBody">+ Text</button>
+    <button id="addImg">+ Image</button>
+    <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
+    <button id="cleanBtn" class="clean">Clean view (for screenshot)</button>
+    <input id="fileInput" type="file" accept="image/*" hidden>
+  </div>
+
+  <div class="frame">
+    <div class="frame-inner">
+      <span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span>
+      <div class="rail"><span class="tick"></span><span class="glyphs">GALACTIC&nbsp;AFFAIRS</span><span class="tick"></span></div>
+
+      <div class="topline">
+        <span class="left">// Transmission &middot; Assembly Tribune</span>
+        <span>Story by: <span contenteditable="true">____</span> &nbsp;|&nbsp; Issue <span contenteditable="true">000</span> &middot; <span contenteditable="true">Week of 00/00</span></span>
+      </div>
+      <h1 class="masthead" contenteditable="true">Galactic Affairs</h1>
+      <div class="subhead" contenteditable="true">Special Edition</div>
+      <div class="rule"></div>
+
+      <div class="canvas" id="canvas">
+        <div id="grid"></div>
+        <div class="empty-hint" id="emptyHint">Add a title, text box, or image<br>from the toolbar to begin</div>
+      </div>
+
+      <div class="foot">
+        <div class="brand">
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#9fe9ff" stroke-width="1.6">
+            <rect x="3" y="7" width="20" height="20" rx="1.5"/>
+            <line x1="7" y1="12" x2="19" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/>
+            <line x1="7" y1="20" x2="14" y2="20"/><line x1="7" y1="23.5" x2="14" y2="23.5"/>
+            <rect x="16" y="16" width="3.5" height="7.5"/>
+            <circle cx="24.5" cy="20" r="6.2"/><line x1="18.3" y1="20" x2="30.7" y2="20"/><ellipse cx="24.5" cy="20" rx="2.6" ry="6.2"/>
+          </svg>
+          <div class="name">The Assembly Tribune</div>
+        </div>
+        <div class="meta">Galactic News Network<br>By patience, by record, by light</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const canvas=document.getElementById('canvas');
+  const fileInput=document.getElementById('fileInput');
+  const emptyHint=document.getElementById('emptyHint');
+  let topZ=10;
+  let zoomScale=1;
+
+  function hideHintIfNeeded(){
+    if(canvas.querySelectorAll('.el').length>0) emptyHint.style.display='none';
+    else emptyHint.style.display='';
+  }
+
+  function clampToCanvas(el){
+    const cw=canvas.clientWidth, ch=canvas.clientHeight;
+    let l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
+    const w=el.offsetWidth, h=el.offsetHeight;
+    l=Math.max(-w+50, Math.min(l, cw-50));
+    t=Math.max(0, Math.min(t, ch-26));
+    el.style.left=Math.round(l)+'px'; el.style.top=Math.round(t)+'px';
+  }
+
+  function makeEl(){
+    const el=document.createElement('div');
+    el.className='el';
+    el.style.left='70px'; el.style.top='60px'; el.style.zIndex=(++topZ);
+    const bar=document.createElement('div'); bar.className='el-bar';
+    const grip=document.createElement('span'); grip.textContent='\u283f drag';
+    const del=document.createElement('button'); del.type='button'; del.className='del'; del.textContent='\u00d7';
+    del.addEventListener('click',(e)=>{e.stopPropagation(); el.remove(); hideHintIfNeeded();});
+    bar.appendChild(grip); bar.appendChild(del); el.appendChild(bar);
+
+    bar.addEventListener('pointerdown',(e)=>{
+      if(e.target===del) return;
+      e.preventDefault();
+      el.style.zIndex=(++topZ);
+      const sx=e.clientX, sy=e.clientY;
+      const ox=parseFloat(el.style.left)||0, oy=parseFloat(el.style.top)||0;
+      function mv(ev){ el.style.left=(ox+(ev.clientX-sx)/zoomScale)+'px'; el.style.top=(oy+(ev.clientY-sy)/zoomScale)+'px'; }
+      function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); clampToCanvas(el); }
+      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+    });
+    el.addEventListener('pointerdown',()=>{ el.style.zIndex=(++topZ); });
+    canvas.appendChild(el);
+    hideHintIfNeeded();
+    return el;
+  }
+
+  function addText(kind){
+    const el=makeEl();
+    const box=document.createElement('div');
+    box.className='el-box text '+kind;
+    box.contentEditable='true';
+    box.textContent = kind==='title' ? 'Title text' : (kind==='sub' ? 'Subtitle text' : 'Body text \u2014 click to edit.');
+    el.appendChild(box);
+    box.addEventListener('focus',()=>{ if(box.dataset.touched) return; });
+  }
+
+  function addImageFromFile(file){
+    if(!file || !file.type || !file.type.startsWith('image/')) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const el=makeEl();
+      const box=document.createElement('div'); box.className='el-box img';
+      const img=document.createElement('img');
+      img.onload=()=>{
+        const w=280, h=Math.max(60, Math.round(280*(img.naturalHeight/img.naturalWidth)));
+        box.style.width=w+'px'; box.style.height=h+'px';
+      };
+      img.src=reader.result;
+      box.appendChild(img); el.appendChild(box);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('addTitle').onclick=()=>addText('title');
+  document.getElementById('addSub').onclick=()=>addText('sub');
+  document.getElementById('addBody').onclick=()=>addText('body');
+  document.getElementById('addImg').onclick=()=>fileInput.click();
+  fileInput.onchange=()=>{ if(fileInput.files[0]) addImageFromFile(fileInput.files[0]); fileInput.value=''; };
+
+  canvas.addEventListener('dragover',(e)=>{e.preventDefault();});
+  canvas.addEventListener('drop',(e)=>{e.preventDefault(); const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) addImageFromFile(f);});
+
+  const cleanBtn=document.getElementById('cleanBtn');
+  cleanBtn.onclick=()=>{ const on=document.body.classList.toggle('clean'); cleanBtn.textContent=on?'Back to editing':'Clean view (for screenshot)'; };
+
+  const frameEl=document.querySelector('.frame');
+  const zoomReadout=document.getElementById('zoomReadout');
+  function applyZoom(){ frameEl.style.zoom=zoomScale; zoomReadout.textContent=Math.round(zoomScale*100)+'%'; }
+  document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
+  document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
+</script>
+</body>
+</html>

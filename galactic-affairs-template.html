@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic Affairs — The Assembly Tribune (template)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Saira:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#05111e;
+    --ink-panel:#0a1f33;
+    --ink-panel-2:#0c2942;
+    --cyan:#4ad8ff;
+    --cyan-bright:#9fe9ff;
+    --cyan-dim:#2f97bd;
+    --text:#e2f3fc;
+    --text-dim:#9dc2d6;
+    --gold:#e6b94a;
+    --gold-dim:#b88a2e;
+    --line:rgba(74,216,255,.32);
+    --chamfer:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#000;
+    font-family:'Saira',sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    padding:28px 16px 60px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+
+  /* ---- toolbar (never part of the screenshot) ---- */
+  .toolbar{
+    width:900px;max-width:100%;
+    background:rgba(10,31,51,.7);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    font-family:'Chakra Petch',sans-serif;
+    font-size:13px;
+    color:var(--text-dim);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .toolbar b{color:var(--cyan-bright);font-weight:600;}
+  .toolbar button{
+    font-family:'Chakra Petch',sans-serif;
+    background:rgba(74,216,255,.12);
+    color:var(--cyan-bright);
+    border:1px solid var(--cyan-dim);
+    border-radius:7px;
+    padding:7px 14px;
+    font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;transition:background .2s;
+  }
+  .toolbar button:hover{background:rgba(74,216,255,.24);}
+  .toolbar .hint{flex:1;min-width:200px;line-height:1.5;}
+  .toolbar .zoomctl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--cyan-dim);border-radius:7px;padding:2px 6px;}
+  .toolbar .zoomctl button{border:none;background:none;color:var(--cyan-bright);font-size:17px;line-height:1;padding:2px 8px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
+  .toolbar .zoomctl button:hover{background:rgba(74,216,255,.18);}
+  .toolbar .zoomctl #zoomReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:44px;text-align:center;color:var(--text);}
+  body:not(.guides) .toolbar{padding:7px 12px;}
+  body:not(.guides) .toolbar .hint{display:none;}
+
+  /* ---- the bulletin (this is what you screenshot) ---- */
+  .frame{
+    width:900px;max-width:100%;
+    background:var(--cyan);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    padding:2.5px;
+    filter:drop-shadow(0 0 14px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
+  }
+  .frame-inner{
+    background:
+      linear-gradient(transparent 0 calc(100% - 1px), rgba(74,216,255,.05) 0) 0 0/100% 4px,
+      radial-gradient(900px 380px at 50% -8%, rgba(74,216,255,.12), transparent 62%),
+      var(--ink);
+    clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
+    position:relative;
+    padding:30px 40px 26px 58px;
+  }
+
+  /* decorative left rail */
+  .rail{
+    position:absolute;left:18px;top:96px;bottom:96px;width:20px;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    pointer-events:none;
+  }
+  .rail .tick{width:12px;height:2px;background:var(--cyan);opacity:.5;box-shadow:0 0 6px rgba(74,216,255,.6);}
+  .rail .glyphs{
+    writing-mode:vertical-rl;transform:rotate(180deg);
+    font-family:'Chakra Petch',sans-serif;font-weight:500;
+    font-size:11px;letter-spacing:.5em;color:var(--cyan);opacity:.55;
+    text-shadow:0 0 6px rgba(74,216,255,.5);white-space:nowrap;
+  }
+
+  /* corner brackets */
+  .br{position:absolute;width:20px;height:20px;border:2px solid var(--cyan);opacity:.85;filter:drop-shadow(0 0 4px rgba(74,216,255,.6));}
+  .br.tl{top:9px;left:9px;border-right:0;border-bottom:0;}
+  .br.tr{top:9px;right:9px;border-left:0;border-bottom:0;}
+  .br.bl{bottom:9px;left:9px;border-right:0;border-top:0;}
+  .br.brr{bottom:9px;right:9px;border-left:0;border-top:0;}
+
+  /* ---- masthead ---- */
+  .topline{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    font-family:'Chakra Petch',sans-serif;font-size:10.5px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--cyan-dim);margin-bottom:6px;
+  }
+  .topline .left{color:var(--cyan);opacity:.85;}
+  .masthead{
+    font-family:'Chakra Petch',sans-serif;font-weight:700;
+    font-size:54px;line-height:.96;letter-spacing:.04em;
+    color:var(--cyan-bright);
+    text-shadow:0 0 18px rgba(74,216,255,.55),0 0 3px rgba(74,216,255,.9);
+    margin:0;
+  }
+  .subhead{
+    font-family:'Chakra Petch',sans-serif;font-weight:500;
+    font-size:19px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text);margin:3px 0 0;opacity:.92;
+  }
+  .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));
+    box-shadow:0 0 8px rgba(74,216,255,.5);margin:14px 0 18px;}
+
+  /* ---- editor note ---- */
+  .lead{
+    background:linear-gradient(180deg,rgba(74,216,255,.07),rgba(74,216,255,.02));
+    border:1px solid var(--line);border-left:3px solid var(--cyan);
+    padding:16px 20px;margin-bottom:16px;
+  }
+  .lead h2{
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+    font-size:25px;color:var(--cyan-bright);margin:0 0 8px;
+    text-shadow:0 0 10px rgba(74,216,255,.35);
+  }
+  .lead p{font-size:15px;line-height:1.62;margin:0 0 9px;color:var(--text);}
+  .lead p:last-child{margin-bottom:0;}
+
+  /* ---- weekly focus (gold spotlight) ---- */
+  .focus{
+    background:linear-gradient(180deg,rgba(230,185,74,.10),rgba(230,185,74,.02));
+    border:1px solid rgba(230,185,74,.4);border-left:3px solid var(--gold);
+    padding:14px 20px;margin-bottom:20px;
+    display:flex;gap:18px;align-items:center;
+  }
+  .focus .badge{
+    font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;
+    letter-spacing:.28em;text-transform:uppercase;color:var(--gold);
+    writing-mode:vertical-rl;transform:rotate(180deg);
+    border-right:1px solid rgba(230,185,74,.4);padding-right:12px;
+    text-shadow:0 0 8px rgba(230,185,74,.4);
+  }
+  .focus .body{flex:1;}
+  .focus .who{
+    font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:21px;
+    color:var(--gold);margin:0 0 3px;text-shadow:0 0 10px rgba(230,185,74,.3);
+  }
+  .focus .why{font-size:14.5px;line-height:1.55;color:var(--text);margin:0;}
+
+  /* ---- two columns ---- */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
+  .col h3{
+    font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:20px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-bright);
+    margin:0 0 2px;text-shadow:0 0 12px rgba(74,216,255,.45);
+    border-bottom:1px solid var(--line);padding-bottom:6px;
+  }
+  .col .note{font-family:'Saira',sans-serif;font-style:italic;font-size:12px;
+    color:var(--text-dim);margin:0 0 12px;line-height:1.4;}
+  .grp{
+    font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13.5px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);
+    margin:13px 0 4px;text-shadow:0 0 7px rgba(74,216,255,.35);
+  }
+  .grp:first-of-type{margin-top:6px;}
+  .row{font-size:14px;line-height:1.5;color:var(--text);margin:2px 0;}
+  .row .n{color:var(--cyan-bright);font-weight:500;}
+  .row .arrow{color:var(--gold);}
+
+  /* ---- footer ---- */
+  .foot{display:flex;justify-content:space-between;align-items:flex-end;
+    margin-top:24px;border-top:2px solid var(--line);padding-top:14px;}
+  .foot .brand{display:flex;align-items:center;gap:12px;}
+  .foot .brand svg{filter:drop-shadow(0 0 5px rgba(74,216,255,.5));}
+  .foot .brand .name{
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+    font-size:30px;line-height:1;color:var(--cyan-bright);
+    text-shadow:0 0 12px rgba(74,216,255,.4);
+  }
+  .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10.5px;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
+
+  /* ---- edit affordances (only visible with guides on; never in a clean screenshot) ---- */
+  [contenteditable]{outline:none;border-radius:2px;}
+  body.guides [contenteditable]:hover{box-shadow:0 0 0 1px rgba(74,216,255,.35);}
+  body.guides [contenteditable]:focus{box-shadow:0 0 0 1px var(--cyan);background:rgba(74,216,255,.06);}
+
+  @media print{.toolbar{display:none;}}
+  @media (max-width:640px){
+    .frame-inner{padding:22px 18px 20px 40px;}
+    .masthead{font-size:34px;}
+    .cols{grid-template-columns:1fr;gap:18px;}
+  }
+</style>
+</head>
+<body class="guides">
+
+  <div class="toolbar">
+    <div class="hint"><b>How to use:</b> click any text to edit it, type your weekly content. Use <b>&minus; / +</b> to scale the bulletin up for a larger, sharper image, then click <b>Hide edit guides</b> and screenshot just the bulletin below (Windows: <b>Win + Shift + S</b>). This bar won't appear in the screenshot.</div>
+    <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
+    <button id="toggle">Hide edit guides</button>
+  </div>
+
+  <div class="frame">
+    <div class="frame-inner">
+      <span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span>
+      <div class="rail">
+        <span class="tick"></span>
+        <span class="glyphs">GALACTIC&nbsp;AFFAIRS</span>
+        <span class="tick"></span>
+      </div>
+
+      <div class="topline">
+        <span class="left">// Transmission &middot; Assembly Tribune</span>
+        <span>Story by: <span contenteditable="true">Alexsnakk</span> &nbsp;|&nbsp; Issue <span contenteditable="true">000</span> &middot; <span contenteditable="true">Week of 00/00</span></span>
+      </div>
+
+      <h1 class="masthead" contenteditable="true">Galactic Affairs</h1>
+      <div class="subhead" contenteditable="true">Upcoming Events &amp; Recognition</div>
+      <div class="rule"></div>
+
+      <div class="lead">
+        <h2 contenteditable="true">Note From Our Editors</h2>
+        <p contenteditable="true">This week has been lovely and we got a GWCG! Don't know about you guys but I got lime crystal. Do let me know what you've gotten and be sure to show it off.</p>
+        <p contenteditable="true">Apologies for the delay. From now on the Galactic News will be dropping on either Monday or Tuesday.</p>
+      </div>
+
+      <div class="focus">
+        <div class="badge">Weekly Focus</div>
+        <div class="body">
+          <p class="who" contenteditable="true">[ Member name ]</p>
+          <p class="why" contenteditable="true">A short note on the member who stood out this week and why they're being recognised. Replace this with your spotlight.</p>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="col">
+          <h3>Weekly Statistics</h3>
+          <p class="note">Group, events, best performing High Rank</p>
+
+          <div class="grp" contenteditable="true">Council of First Knowledge</div>
+          <div class="row" contenteditable="true">Consulars — <span class="n">60 events</span>, FoxZOwen08</div>
+          <div class="row" contenteditable="true">LA — <span class="n">18 events</span>, Oxfordplayers</div>
+
+          <div class="grp" contenteditable="true">Council of Reconciliation</div>
+          <div class="row" contenteditable="true">Sentinels — <span class="n">131 events</span>, Paasmedown</div>
+          <div class="row" contenteditable="true">Investigators — <span class="n">60 events</span>, Sebi2010123</div>
+
+          <div class="grp" contenteditable="true">Council of Reassignment</div>
+          <div class="row" contenteditable="true">Guardians — <span class="n">73 events</span>, v_An1m3</div>
+          <div class="row" contenteditable="true">JTF — <span class="n">46 events</span>, Rush_BladeZ &amp; Magicgnome88</div>
+
+          <div class="grp" contenteditable="true">Community Oversight</div>
+          <div class="row" contenteditable="true">Researchers — <span class="n">27 events</span>, goldfeesh1</div>
+          <div class="row" contenteditable="true">Academy — <span class="n">93 events</span>, Jov_Dw11</div>
+
+          <div class="grp" contenteditable="true">Moderation Oversight</div>
+          <div class="row" contenteditable="true">Tribunal — <span class="n">14 Appeals</span></div>
+
+          <div class="grp" contenteditable="true">Temple Guard Oversight</div>
+          <div class="row" contenteditable="true">TG — <span class="n">95 events</span>, Hjsaewrgbd</div>
+        </div>
+
+        <div class="col">
+          <h3>Promotions</h3>
+          <p class="note">Temple Guardian promotions are only shown if public</p>
+
+          <div class="grp" contenteditable="true">Council of First Knowledge</div>
+          <div class="row" contenteditable="true">—</div>
+
+          <div class="grp" contenteditable="true">Council of Reconciliation</div>
+          <div class="row" contenteditable="true">Dolce_Coco: Artisan <span class="arrow">→</span> Instructor</div>
+          <div class="row" contenteditable="true">Binxqs: Diplomat <span class="arrow">→</span> Artisan</div>
+          <div class="row" contenteditable="true">GoldAdvisory <span class="arrow">→</span> Detective</div>
+
+          <div class="grp" contenteditable="true">Council of Reassignment</div>
+          <div class="row" contenteditable="true">—</div>
+
+          <div class="grp" contenteditable="true">Community Oversight</div>
+          <div class="row" contenteditable="true">NexroHikari | Research Master</div>
+          <div class="row" contenteditable="true">goldfeesh1 | Board of Researchers</div>
+          <div class="row" contenteditable="true">racconnss: Community Director <span class="arrow">→</span> Deputy Master of the Academy</div>
+          <div class="row" contenteditable="true">o700041: Phase 1 Senior Instructor <span class="arrow">→</span> Phase 1 Chief Instructor</div>
+
+          <div class="grp" contenteditable="true">Moderation Oversight</div>
+          <div class="row" contenteditable="true">—</div>
+
+          <div class="grp" contenteditable="true">Temple Guard Oversight</div>
+          <div class="row" contenteditable="true">ZentrixSol: Senior Guardian <span class="arrow">→</span> Warden</div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div class="brand">
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#9fe9ff" stroke-width="1.6">
+            <rect x="3" y="7" width="20" height="20" rx="1.5"/>
+            <line x1="7" y1="12" x2="19" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/>
+            <line x1="7" y1="20" x2="14" y2="20"/><line x1="7" y1="23.5" x2="14" y2="23.5"/>
+            <rect x="16" y="16" width="3.5" height="7.5"/>
+            <circle cx="24.5" cy="20" r="6.2"/>
+            <line x1="18.3" y1="20" x2="30.7" y2="20"/><ellipse cx="24.5" cy="20" rx="2.6" ry="6.2"/>
+          </svg>
+          <div class="name">The Assembly Tribune</div>
+        </div>
+        <div class="meta">Galactic News Network<br>By patience, by record, by light</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const btn=document.getElementById('toggle');
+  btn.addEventListener('click',()=>{
+    const on=document.body.classList.toggle('guides');
+    btn.textContent=on?'Hide edit guides':'Show edit guides';
+  });
+
+  let zoomScale=1;
+  const frameEl=document.querySelector('.frame');
+  const zoomReadout=document.getElementById('zoomReadout');
+  function applyZoom(){ frameEl.style.zoom=zoomScale; zoomReadout.textContent=Math.round(zoomScale*100)+'%'; }
+  document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
+  document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
+</script>
+</body>
+</html>
