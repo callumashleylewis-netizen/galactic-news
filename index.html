@@ -15,13 +15,63 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:#000;font-family:'Saira',sans-serif;color:var(--text);
-    min-height:100vh;padding:40px 16px;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(1200px 760px at 16% -12%, rgba(74,216,255,.11), transparent 60%),
+      radial-gradient(1000px 820px at 112% 18%, rgba(74,216,255,.07), transparent 55%),
+      radial-gradient(900px 720px at 88% 118%, rgba(230,185,74,.06), transparent 55%),
+      radial-gradient(1500px 1100px at 50% 46%, #071726, #03101d 68%, #01070d);
+    font-family:'Saira',sans-serif;color:var(--text);
+    min-height:100vh;padding:48px 18px;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow-x:hidden;
   }
+  body::after{ /* vignette */
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+
+  /* ---- deep-space environment ---- */
+  .space{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .planet{position:absolute;right:-130px;bottom:-180px;width:440px;height:440px;border-radius:50%;
+    background:radial-gradient(circle at 36% 34%, rgba(74,216,255,.12), rgba(74,216,255,.03) 46%, transparent 70%);
+    filter:blur(2px);}
+  #stars{position:absolute;inset:0;}
+  .star{position:absolute;border-radius:50%;background:#cdeffd;opacity:.6;
+    animation:tw var(--d,4s) ease-in-out infinite;}
+  @keyframes tw{0%,100%{opacity:.14;}50%{opacity:.92;}}
+
+  .reticle{position:fixed;left:50%;top:50%;width:min(1180px,128vmax);aspect-ratio:1;
+    transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+    filter:drop-shadow(0 0 12px rgba(74,216,255,.14));}
+  .ret-spin{transform-box:fill-box;transform-origin:center;animation:spin 80s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .scan{position:fixed;left:0;right:0;top:0;height:2px;z-index:1;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(74,216,255,.5),transparent);
+    filter:blur(1px);opacity:.45;animation:scan 9s linear infinite;}
+  @keyframes scan{0%{transform:translateY(-12vh);}100%{transform:translateY(112vh);}}
+
+  /* ---- viewport HUD ---- */
+  .hud{position:fixed;inset:0;z-index:3;pointer-events:none;font-family:'Chakra Petch',sans-serif;}
+  .hc{position:absolute;width:26px;height:26px;border:1.5px solid var(--cyan);opacity:.5;
+    filter:drop-shadow(0 0 5px rgba(74,216,255,.5));}
+  .hc.tl{top:18px;left:18px;border-right:0;border-bottom:0;}
+  .hc.tr{top:18px;right:18px;border-left:0;border-bottom:0;}
+  .hc.bl{bottom:18px;left:18px;border-right:0;border-top:0;}
+  .hc.brr{bottom:18px;right:18px;border-left:0;border-top:0;}
+  .hlab{position:absolute;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan-dim);white-space:nowrap;}
+  .hlab.tl{top:23px;left:56px;}
+  .hlab.tr{top:23px;right:56px;}
+  .hlab.bl{bottom:23px;left:56px;}
+  .hlab.brr{bottom:23px;right:56px;}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 6px var(--cyan);margin-right:7px;vertical-align:middle;animation:blink 2.4s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  /* ---- central console panel ---- */
   .frame{
-    width:760px;max-width:100%;background:var(--cyan);
+    position:relative;z-index:2;width:760px;max-width:100%;background:var(--cyan);
     clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
-    padding:2.5px;filter:drop-shadow(0 0 16px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
+    padding:2.5px;filter:drop-shadow(0 0 22px rgba(74,216,255,.40)) drop-shadow(0 0 3px rgba(74,216,255,.8));
   }
   .inner{
     background:
@@ -44,18 +94,25 @@
 
   .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
   a.card{
-    display:block;text-decoration:none;color:inherit;
+    display:block;text-decoration:none;color:inherit;position:relative;overflow:hidden;
     background:linear-gradient(180deg,rgba(74,216,255,.07),rgba(74,216,255,.02));
-    border:1px solid var(--line);padding:22px 22px 18px;transition:border-color .2s,background .2s,transform .15s;
+    border:1px solid var(--line);padding:22px 22px 18px;transition:border-color .2s,background .2s,transform .15s,box-shadow .2s;
   }
-  a.card:hover{border-color:var(--cyan);background:linear-gradient(180deg,rgba(74,216,255,.14),rgba(74,216,255,.04));transform:translateY(-2px);}
+  a.card::before{ /* sweep shimmer on hover */
+    content:"";position:absolute;top:0;left:-130%;width:60%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(159,233,253,.12),transparent);
+    transform:skewX(-18deg);transition:left .55s ease;}
+  a.card:hover::before{left:130%;}
+  a.card:hover{border-color:var(--cyan);background:linear-gradient(180deg,rgba(74,216,255,.14),rgba(74,216,255,.04));
+    transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 16px rgba(74,216,255,.18);}
   a.card .ic{font-size:26px;margin-bottom:10px;}
   a.card h2{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:19px;letter-spacing:.05em;text-transform:uppercase;
     color:var(--cyan-bright);margin:0 0 8px;text-shadow:0 0 10px rgba(74,216,255,.4);}
   a.card p{font-size:14px;line-height:1.55;color:var(--text);margin:0 0 14px;}
   a.card .go{font-family:'Chakra Petch',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);}
   a.card.blank{background:linear-gradient(180deg,rgba(230,185,74,.09),rgba(230,185,74,.02));border-color:rgba(230,185,74,.4);}
-  a.card.blank:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(230,185,74,.16),rgba(230,185,74,.04));}
+  a.card.blank::before{background:linear-gradient(100deg,transparent,rgba(230,185,74,.14),transparent);}
+  a.card.blank:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(230,185,74,.16),rgba(230,185,74,.04));box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 16px rgba(230,185,74,.16);}
   a.card.blank h2{color:var(--gold);text-shadow:0 0 10px rgba(230,185,74,.35);}
   a.card.blank .go{color:var(--gold);}
 
@@ -66,27 +123,68 @@
   .foot .brand svg{filter:drop-shadow(0 0 5px rgba(74,216,255,.5));}
   .foot .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:24px;color:var(--cyan-bright);text-shadow:0 0 10px rgba(74,216,255,.4);}
   .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
+
+  /* ---- entrance reveal (only when JS is on; content stays visible without it) ---- */
+  .js .space{opacity:0;animation:fadein 1.3s ease .1s forwards;}
+  .js .frame{opacity:0;animation:fadein .85s ease forwards;}
+  .js .reveal{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;}
+  @keyframes fadein{to{opacity:1;}}
+  @keyframes rise{to{opacity:1;transform:none;}}
+
+  @media (max-width:680px){.hlab{display:none;}}
   @media (max-width:560px){.cards{grid-template-columns:1fr;}h1{font-size:34px;}.inner{padding:30px 24px 26px;}}
+  @media (prefers-reduced-motion:reduce){
+    .star,.ret-spin,.scan,.dot{animation:none!important;}
+    .js .reveal,.js .frame,.js .space{opacity:1!important;transform:none!important;animation:none!important;}
+  }
 </style>
+<script>document.documentElement.className+=' js';</script>
 </head>
 <body>
+  <div class="space">
+    <div class="planet"></div>
+    <div id="stars"></div>
+    <svg class="reticle" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#4ad8ff" fill="none">
+        <circle cx="300" cy="300" r="120" stroke-width="1" opacity=".16"/>
+        <circle cx="300" cy="300" r="180" stroke-width="1" opacity=".10"/>
+        <circle cx="300" cy="300" r="258" stroke-width="1" stroke-dasharray="1 9" opacity=".18"/>
+        <circle cx="300" cy="300" r="288" stroke-width="5" stroke-dasharray="2 24" opacity=".22"/>
+        <g class="ret-spin"><circle cx="300" cy="300" r="216" stroke-width="1.4" stroke-dasharray="3 14" opacity=".30"/></g>
+        <line x1="300" y1="2" x2="300" y2="40" stroke-width="1" opacity=".18"/>
+        <line x1="300" y1="560" x2="300" y2="598" stroke-width="1" opacity=".18"/>
+        <line x1="2" y1="300" x2="40" y2="300" stroke-width="1" opacity=".18"/>
+        <line x1="560" y1="300" x2="598" y2="300" stroke-width="1" opacity=".18"/>
+      </g>
+    </svg>
+  </div>
+  <div class="scan"></div>
+
+  <div class="hud">
+    <span class="hc tl"></span><span class="hc tr"></span><span class="hc bl"></span><span class="hc brr"></span>
+    <div class="hlab tl"><span class="dot"></span>Galactic News Network</div>
+    <div class="hlab tr">Stardate <span id="sd">0000.000</span></div>
+    <div class="hlab bl">Transmission &middot; Secure</div>
+    <div class="hlab brr">Librarians' Assembly</div>
+  </div>
+
   <div class="frame">
     <div class="inner">
       <span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span>
 
-      <div class="kicker">// Transmission &middot; Assembly Tribune</div>
-      <h1>Galactic Affairs</h1>
-      <p class="tagline">News templates for the Librarians' Assembly</p>
-      <div class="rule"></div>
+      <div class="kicker reveal" style="animation-delay:.15s">// Transmission &middot; Assembly Tribune</div>
+      <h1 class="reveal" style="animation-delay:.22s">Galactic Affairs</h1>
+      <p class="tagline reveal" style="animation-delay:.30s">News templates for the Librarians' Assembly</p>
+      <div class="rule reveal" style="animation-delay:.36s"></div>
 
       <div class="cards">
-        <a class="card" href="galactic-affairs-template.html">
+        <a class="card reveal" style="animation-delay:.44s" href="galactic-affairs-template.html">
           <div class="ic">&#9783;</div>
           <h2>Weekly Bulletin</h2>
           <p>The structured weekly layout: editor's note, weekly focus, statistics and promotions. Click each field and type your content.</p>
           <span class="go">Open template &rarr;</span>
         </a>
-        <a class="card blank" href="galactic-affairs-blank.html">
+        <a class="card blank reveal" style="animation-delay:.52s" href="galactic-affairs-blank.html">
           <div class="ic">&#9634;</div>
           <h2>Blank Canvas</h2>
           <p>A free-form sheet for special editions. Add text boxes and images, drag and resize them, and design the page by hand.</p>
@@ -94,9 +192,9 @@
         </a>
       </div>
 
-      <p class="note">Open these on a computer (the blank canvas needs a mouse to drag and resize), and stay connected to the internet so the fonts load correctly. Fill in your content, then screenshot the bulletin to post it.</p>
+      <p class="note reveal" style="animation-delay:.60s">Open these on a computer (the blank canvas needs a mouse to drag and resize), and stay connected to the internet so the fonts load correctly. Fill in your content, then screenshot the bulletin to post it.</p>
 
-      <div class="foot">
+      <div class="foot reveal" style="animation-delay:.66s">
         <div class="brand">
           <svg width="30" height="30" viewBox="0 0 34 34" fill="none" stroke="#9fe9ff" stroke-width="1.6">
             <rect x="3" y="7" width="20" height="20" rx="1.5"/>
@@ -111,5 +209,51 @@
       </div>
     </div>
   </div>
+
+<script>
+  // starfield
+  (function(){
+    const wrap=document.getElementById('stars');
+    if(!wrap) return;
+    const n=84;
+    for(let i=0;i<n;i++){
+      const s=document.createElement('div');
+      s.className='star';
+      s.style.left=(Math.random()*100).toFixed(2)+'%';
+      s.style.top=(Math.random()*100).toFixed(2)+'%';
+      const sz=(Math.random()*1.6+0.6);
+      s.style.width=s.style.height=sz.toFixed(1)+'px';
+      s.style.setProperty('--d',(Math.random()*3.5+2.5).toFixed(1)+'s');
+      s.style.animationDelay=(Math.random()*5).toFixed(1)+'s';
+      if(Math.random()<0.18){ s.style.background='#9fe9ff'; s.style.boxShadow='0 0 6px rgba(74,216,255,.8)'; }
+      wrap.appendChild(s);
+    }
+  })();
+
+  // stardate readout (year.day-of-year)
+  (function(){
+    const el=document.getElementById('sd'); if(!el) return;
+    const now=new Date();
+    const start=new Date(now.getFullYear(),0,0);
+    const doy=Math.floor((now-start)/86400000);
+    el.textContent=now.getFullYear()+'.'+String(doy).padStart(3,'0');
+  })();
+
+  // subtle mouse parallax (depth), skipped when reduced motion is preferred
+  (function(){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const stars=document.getElementById('stars');
+    const reticle=document.querySelector('.reticle');
+    let raf=null,x=0,y=0;
+    addEventListener('mousemove',(e)=>{
+      x=e.clientX/innerWidth-0.5; y=e.clientY/innerHeight-0.5;
+      if(!raf) raf=requestAnimationFrame(()=>{
+        if(stars) stars.style.transform='translate('+(x*-16).toFixed(1)+'px,'+(y*-16).toFixed(1)+'px)';
+        if(reticle) reticle.style.transform='translate(calc(-50% + '+(x*-26).toFixed(1)+'px), calc(-50% + '+(y*-26).toFixed(1)+'px))';
+        raf=null;
+      });
+    });
+  })();
+</script>
 </body>
 </html>
