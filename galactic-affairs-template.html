@@ -36,7 +36,6 @@
     gap:18px;
   }
 
-  /* ---- toolbar (never part of the screenshot) ---- */
   .toolbar{
     width:900px;max-width:100%;
     background:rgba(10,31,51,.7);
@@ -73,7 +72,6 @@
     letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
   .reopen:hover{background:rgba(74,216,255,.30);}
 
-  /* ---- the bulletin (this is what you screenshot) ---- */
   .frame{
     width:900px;max-width:100%;
     background:var(--cyan);
@@ -91,7 +89,6 @@
     padding:30px 40px 26px 58px;
   }
 
-  /* decorative left rail */
   .rail{
     position:absolute;left:18px;top:96px;bottom:96px;width:20px;
     display:flex;flex-direction:column;align-items:center;justify-content:space-between;
@@ -105,14 +102,12 @@
     text-shadow:0 0 6px rgba(74,216,255,.5);white-space:nowrap;
   }
 
-  /* corner brackets */
   .br{position:absolute;width:20px;height:20px;border:2px solid var(--cyan);opacity:.85;filter:drop-shadow(0 0 4px rgba(74,216,255,.6));}
   .br.tl{top:9px;left:9px;border-right:0;border-bottom:0;}
   .br.tr{top:9px;right:9px;border-left:0;border-bottom:0;}
   .br.bl{bottom:9px;left:9px;border-right:0;border-top:0;}
   .br.brr{bottom:9px;right:9px;border-left:0;border-top:0;}
 
-  /* ---- masthead ---- */
   .topline{
     display:flex;justify-content:space-between;align-items:flex-end;
     font-family:'Chakra Petch',sans-serif;font-size:10.5px;letter-spacing:.34em;
@@ -134,7 +129,6 @@
   .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));
     box-shadow:0 0 8px rgba(74,216,255,.5);margin:14px 0 18px;}
 
-  /* ---- editor note ---- */
   .lead{
     background:linear-gradient(180deg,rgba(74,216,255,.07),rgba(74,216,255,.02));
     border:1px solid var(--line);border-left:3px solid var(--cyan);
@@ -148,7 +142,6 @@
   .lead p{font-size:15px;line-height:1.62;margin:0 0 9px;color:var(--text);}
   .lead p:last-child{margin-bottom:0;}
 
-  /* ---- weekly focus (gold spotlight) ---- */
   .focus{
     background:linear-gradient(180deg,rgba(230,185,74,.10),rgba(230,185,74,.02));
     border:1px solid rgba(230,185,74,.4);border-left:3px solid var(--gold);
@@ -169,7 +162,6 @@
   }
   .focus .why{font-size:14.5px;line-height:1.55;color:var(--text);margin:0;}
 
-  /* ---- two columns ---- */
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
   .col h3{
     font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:20px;
@@ -189,7 +181,6 @@
   .row .n{color:var(--cyan-bright);font-weight:500;}
   .row .arrow{color:var(--gold);}
 
-  /* ---- footer ---- */
   .foot{display:flex;justify-content:space-between;align-items:flex-end;
     margin-top:24px;border-top:2px solid var(--line);padding-top:14px;}
   .foot .brand{display:flex;align-items:center;gap:12px;}
@@ -202,7 +193,6 @@
   .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10.5px;
     letter-spacing:.3em;text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
 
-  /* ---- edit affordances (only visible with guides on; never in a clean screenshot) ---- */
   [contenteditable]{outline:none;border-radius:2px;}
   body.guides [contenteditable]:hover{box-shadow:0 0 0 1px rgba(74,216,255,.35);}
   body.guides [contenteditable]:focus{box-shadow:0 0 0 1px var(--cyan);background:rgba(74,216,255,.06);}
