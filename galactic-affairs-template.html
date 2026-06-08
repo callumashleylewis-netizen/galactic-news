@@ -71,6 +71,38 @@
     border:1px solid var(--cyan-dim);border-radius:7px;padding:6px 13px;font-size:12px;
     letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
   .reopen:hover{background:rgba(74,216,255,.30);}
+  .saves-panel{position:fixed;top:0;right:0;bottom:0;width:320px;max-width:88vw;z-index:60;
+    background:#08182a;border-left:1px solid var(--cyan-dim);box-shadow:-8px 0 24px rgba(0,0,0,.5);
+    transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;
+    font-family:'Saira',sans-serif;}
+  .saves-panel.open{transform:translateX(0);}
+  .sp-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+    border-bottom:1px solid var(--line);}
+  .sp-head h3{font-family:'Chakra Petch',sans-serif;font-size:15px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--cyan-bright);margin:0;text-shadow:0 0 8px rgba(74,216,255,.4);}
+  .sp-close{background:none;border:none;color:var(--text-dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;}
+  .sp-close:hover{color:var(--cyan-bright);}
+  .sp-list{flex:1;overflow-y:auto;padding:8px 12px 16px;}
+  .sp-list .grp-label{font-family:'Chakra Petch',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--cyan);opacity:.8;margin:14px 2px 6px;}
+  .sp-list .save-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:rgba(74,216,255,.06);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:6px;}
+  .sp-list .si-name{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sp-list .si-actions{display:flex;gap:4px;flex:0 0 auto;}
+  .sp-list .si-actions button{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+    border:1px solid var(--cyan-dim);background:rgba(74,216,255,.1);color:var(--cyan-bright);border-radius:5px;padding:4px 7px;cursor:pointer;}
+  .sp-list .si-actions button[data-act="del"]{border-color:rgba(255,120,120,.5);color:#ff9a9a;background:rgba(255,120,120,.08);}
+  .sp-list .si-actions button:hover{filter:brightness(1.3);}
+  .sp-list .empty{color:var(--text-dim);font-size:13px;font-style:italic;padding:16px 4px;}
+  .sp-foot{padding:12px 16px;border-top:1px solid var(--line);}
+  .sp-foot button{width:100%;font-family:'Chakra Petch',sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid var(--cyan-dim);background:rgba(74,216,255,.1);color:var(--cyan-bright);border-radius:6px;padding:8px;cursor:pointer;}
+  .sp-foot button:hover{background:rgba(74,216,255,.2);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:70;
+    background:#0c2942;border:1px solid var(--cyan-dim);color:var(--cyan-bright);font-family:'Chakra Petch',sans-serif;
+    font-size:13px;letter-spacing:.04em;padding:10px 18px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.5);
+    opacity:0;pointer-events:none;transition:opacity .2s;}
+  .toast.show{opacity:1;}
 
   .frame{
     width:900px;max-width:100%;
@@ -212,9 +244,21 @@
   <div class="toolbar">
     <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. Use <b>&minus; / +</b> to scale up for a sharper image. When you're ready, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
     <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
+    <button id="saveBtn" type="button">Save</button>
+    <button id="savesBtn" type="button">Saves</button>
     <button id="hideBtn">Clean view</button>
   </div>
   <button id="showBtn" class="reopen" type="button">&#9998; Edit</button>
+
+  <div class="saves-panel" id="savesPanel" aria-hidden="true">
+    <div class="sp-head">
+      <h3>Saved bulletins</h3>
+      <button class="sp-close" id="savesClose" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="sp-list" id="savesList"></div>
+    <div class="sp-foot"><button id="freshBtn" type="button">Start a fresh bulletin</button></div>
+  </div>
+  <div class="toast" id="toast"></div>
 
   <div class="frame">
     <div class="frame-inner">
@@ -327,6 +371,114 @@
   function applyZoom(){ frameEl.style.zoom=zoomScale; zoomReadout.textContent=Math.round(zoomScale*100)+'%'; }
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
+
+  // ---- saving feature (uses browser localStorage; works when opened from
+  // your GitHub Pages link or a downloaded copy, not the in-chat preview) ----
+  const SAVES_KEY='galactic-affairs-saves';
+  const DRAFT_KEY='galactic-affairs-draft';
+
+  function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+  function storageOK(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; }catch(e){ return false; } }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function editableEls(){ return document.querySelectorAll('.frame [contenteditable]'); }
+  function captureState(){ return Array.from(editableEls()).map(el=>el.innerHTML); }
+  function restoreState(arr){
+    const els=editableEls();
+    if(!Array.isArray(arr) || arr.length!==els.length) return false;
+    els.forEach((el,i)=>{ el.innerHTML=arr[i]; });
+    return true;
+  }
+
+  // remember the shipped default before any draft is applied
+  const DEFAULT_STATE=captureState();
+
+  let toastTimer=null;
+  function toast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  }
+
+  function dateLabel(d){
+    const today=new Date(); today.setHours(0,0,0,0);
+    const dd=new Date(d); dd.setHours(0,0,0,0);
+    const diff=Math.round((today-dd)/86400000);
+    if(diff===0) return 'Today';
+    if(diff===1) return 'Yesterday';
+    return d.toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
+  }
+  function groupByDate(entries){
+    const groups={}, order=[];
+    for(const e of entries){
+      const label=dateLabel(new Date(e.ts));
+      if(!(label in groups)){ groups[label]=[]; order.push(label); }
+      groups[label].push(e);
+    }
+    return order.map(l=>({label:l, items:groups[l]}));
+  }
+
+  function renderSaves(){
+    const list=document.getElementById('savesList');
+    const saves=(lsGet(SAVES_KEY)||[]).sort((a,b)=>b.ts-a.ts);
+    if(!saves.length){ list.innerHTML='<div class="empty">No saved bulletins yet. Click Save to keep your current work.</div>'; return; }
+    list.innerHTML=groupByDate(saves).map(g=>
+      '<div class="grp-label">'+escapeHtml(g.label)+'</div>'+
+      g.items.map(it=>
+        '<div class="save-item"><span class="si-name" title="'+escapeHtml(it.name)+'">'+escapeHtml(it.name)+'</span>'+
+        '<span class="si-actions"><button type="button" data-act="load" data-id="'+it.id+'">Load</button>'+
+        '<button type="button" data-act="del" data-id="'+it.id+'">Delete</button></span></div>'
+      ).join('')
+    ).join('');
+  }
+
+  function saveNamed(){
+    if(!storageOK()){ toast('Storage is blocked here — open from your GitHub Pages link to save'); return; }
+    const saves=lsGet(SAVES_KEY)||[];
+    const now=new Date();
+    const name='Bulletin — '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureState() });
+    if(lsSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
+    else { toast('Save failed — storage may be full'); }
+  }
+
+  const panel=document.getElementById('savesPanel');
+  function openSaves(){ renderSaves(); panel.classList.add('open'); panel.setAttribute('aria-hidden','false'); }
+  function closeSaves(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true'); }
+
+  document.getElementById('saveBtn').onclick=saveNamed;
+  document.getElementById('savesBtn').onclick=()=>{ panel.classList.contains('open')?closeSaves():openSaves(); };
+  document.getElementById('savesClose').onclick=closeSaves;
+
+  document.getElementById('savesList').addEventListener('click',(e)=>{
+    const btn=e.target.closest('button[data-act]'); if(!btn) return;
+    const id=btn.getAttribute('data-id');
+    const saves=lsGet(SAVES_KEY)||[];
+    if(btn.getAttribute('data-act')==='load'){
+      const it=saves.find(s=>s.id===id);
+      if(it && restoreState(it.data)){ lsSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
+      else { toast("Couldn't load this save"); }
+    } else {
+      lsSet(SAVES_KEY, saves.filter(s=>s.id!==id)); renderSaves();
+    }
+  });
+
+  document.getElementById('freshBtn').onclick=()=>{
+    if(!confirm('Start a fresh bulletin? Your current unsaved work will be cleared. Saved bulletins are kept.')) return;
+    restoreState(DEFAULT_STATE); lsSet(DRAFT_KEY,DEFAULT_STATE); closeSaves(); toast('Fresh bulletin');
+  };
+
+  // auto-draft so you return to where you left off; debounced on edits + on close
+  let draftTimer=null;
+  frameEl.addEventListener('input',()=>{
+    clearTimeout(draftTimer);
+    draftTimer=setTimeout(()=>lsSet(DRAFT_KEY,captureState()),700);
+  });
+  window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureState()));
+
+  // on open, restore the last draft if there is one
+  (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
 </script>
 </body>
 </html>
