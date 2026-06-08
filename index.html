@@ -31,9 +31,21 @@
 
   /* ---- deep-space environment ---- */
   .space{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-  .planet{position:absolute;right:-130px;bottom:-180px;width:440px;height:440px;border-radius:50%;
-    background:radial-gradient(circle at 36% 34%, rgba(74,216,255,.12), rgba(74,216,255,.03) 46%, transparent 70%);
-    filter:blur(2px);}
+  .planet{position:absolute;right:-150px;bottom:-175px;width:430px;height:430px;border-radius:50%;
+    overflow:hidden;z-index:0;
+    background:radial-gradient(circle at 33% 30%, #1f6076 0%, #143f54 36%, #0b2738 60%, #061a28 100%);
+    box-shadow:inset 20px 16px 46px rgba(159,233,253,.16),
+      inset -34px -26px 70px rgba(0,0,0,.6),
+      0 0 70px rgba(74,216,255,.10);
+    animation:planetDrift 70s ease-in-out infinite;}
+  .planet::before{content:"";position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 30% 28%, rgba(230,185,74,.12), transparent 42%);
+    box-shadow:inset 0 0 26px 5px rgba(74,216,255,.20);}
+  .planet::after{content:"";position:absolute;left:-30%;top:0;width:170%;height:100%;
+    background:repeating-linear-gradient(9deg, transparent 0 24px, rgba(0,0,0,.10) 24px 33px, transparent 33px 56px);
+    opacity:.45;animation:bands 46s linear infinite;}
+  @keyframes bands{from{transform:translateX(0);}to{transform:translateX(16%);}}
+  @keyframes planetDrift{0%,100%{transform:translate(0,0);}50%{transform:translate(-16px,-11px);}}
   #stars{position:absolute;inset:0;}
   .star{position:absolute;border-radius:50%;background:#cdeffd;opacity:.6;
     animation:tw var(--d,4s) ease-in-out infinite;}
@@ -131,6 +143,51 @@
   @keyframes fadein{to{opacity:1;}}
   @keyframes rise{to{opacity:1;transform:none;}}
 
+  /* ---- ambient ship traffic (original sci-fi craft) ---- */
+  .fleet{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .ship{position:absolute;filter:drop-shadow(0 0 5px rgba(74,216,255,.45));}
+  .chase{position:absolute;top:13vh;left:0;width:230px;height:90px;
+    transform:translateX(-26vw) rotate(-7deg);animation:fly 21s linear infinite 3s;}
+  @keyframes fly{0%{transform:translateX(-26vw) rotate(-7deg);}
+    30%{transform:translateX(120vw) rotate(-7deg);}
+    100%{transform:translateX(120vw) rotate(-7deg);}}
+  .chase .fighter{left:160px;top:4px;}
+  .chase .pursuer{left:6px;top:32px;}
+  .laser{position:absolute;left:76px;width:24px;height:2px;border-radius:2px;
+    background:#ff6a58;box-shadow:0 0 6px #ff6a58,0 0 2px #fff;opacity:0;}
+  .laser.l1{top:38px;animation:shoot 1.05s linear infinite 3s;}
+  .laser.l2{top:46px;animation:shoot 1.05s linear infinite 3.5s;}
+  @keyframes shoot{0%{opacity:0;transform:rotate(-15deg) translateX(0) scaleX(.5);}
+    12%{opacity:1;}
+    70%{opacity:1;transform:rotate(-15deg) translateX(80px) scaleX(1);}
+    100%{opacity:0;transform:rotate(-15deg) translateX(100px) scaleX(1);}}
+  .freighter{position:absolute;top:72vh;left:0;width:130px;height:50px;
+    transform:translateX(-32vw);animation:fly2 40s linear infinite 15s;opacity:.92;}
+  @keyframes fly2{0%{transform:translateX(-32vw);}34%{transform:translateX(124vw);}100%{transform:translateX(124vw);}}
+  @media (max-width:560px){.freighter{display:none;}}
+
+  /* comets / shooting stars */
+  .comet{position:absolute;top:0;left:0;width:120px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,#cfeeff);box-shadow:0 0 6px rgba(159,233,253,.7);
+    opacity:0;transform:translate(-14vw,-14vh) rotate(32deg);animation:comet 17s linear infinite 6s;}
+  .comet.c2{width:90px;animation:comet2 23s linear infinite 13s;}
+  @keyframes comet{0%{opacity:0;transform:translate(-14vw,-14vh) rotate(32deg);}
+    1.5%{opacity:1;}9%{opacity:1;transform:translate(118vw,82vh) rotate(32deg);}9.6%{opacity:0;}
+    100%{opacity:0;transform:translate(118vw,82vh) rotate(32deg);}}
+  @keyframes comet2{0%{opacity:0;transform:translate(116vw,-12vh) rotate(150deg);}
+    1.5%{opacity:1;}8%{opacity:1;transform:translate(-16vw,74vh) rotate(150deg);}8.6%{opacity:0;}
+    100%{opacity:0;transform:translate(-16vw,74vh) rotate(150deg);}}
+
+  /* hyperspace arrival burst */
+  .hyper{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+  .hs{position:absolute;left:50%;top:50%;height:2px;width:34vmax;transform-origin:left center;
+    background:linear-gradient(90deg,rgba(159,233,253,0),rgba(159,233,253,.95));
+    transform:rotate(var(--a)) translateX(0) scaleX(0);opacity:0;animation:hsfly .9s ease-out forwards;}
+  @keyframes hsfly{0%{opacity:0;transform:rotate(var(--a)) translateX(0) scaleX(0);}
+    14%{opacity:1;}100%{opacity:0;transform:rotate(var(--a)) translateX(22vmax) scaleX(1);}}
+
+  @media (prefers-reduced-motion:reduce){.fleet,.comet,.hyper{display:none!important;}}
+
   @media (max-width:680px){.hlab{display:none;}}
   @media (max-width:560px){.cards{grid-template-columns:1fr;}h1{font-size:34px;}.inner{padding:30px 24px 26px;}}
   @media (prefers-reduced-motion:reduce){
@@ -157,6 +214,38 @@
         <line x1="560" y1="300" x2="598" y2="300" stroke-width="1" opacity=".18"/>
       </g>
     </svg>
+    <span class="comet"></span>
+    <span class="comet c2"></span>
+    <div class="fleet">
+      <div class="chase">
+        <svg class="ship pursuer" width="60" height="30" viewBox="0 0 66 34" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2 17 L46 11 L62 17 L46 23 Z" fill="#cdd8e2" stroke="#8ea3b4" stroke-width="1"/>
+          <path d="M18 13 L9 3 L28 11 Z" fill="#9aa7b3"/>
+          <path d="M18 21 L9 31 L28 23 Z" fill="#9aa7b3"/>
+          <circle cx="48" cy="17" r="2.3" fill="#ff7a6a"/>
+          <rect x="0" y="15" width="5" height="4" rx="1.5" fill="#ff8a78" opacity=".9"/>
+        </svg>
+        <svg class="ship fighter" width="54" height="26" viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M3 15 L40 10 L57 15 L40 20 Z" fill="#bfe9fb" stroke="#4ad8ff" stroke-width="1"/>
+          <path d="M22 11 L31 1 L35 12 Z" fill="#7fc8e6"/>
+          <path d="M22 19 L31 29 L35 18 Z" fill="#7fc8e6"/>
+          <circle cx="45" cy="15" r="2.1" fill="#9fe9ff"/>
+          <rect x="0" y="13.5" width="6" height="3" rx="1.5" fill="#9fe9ff" opacity=".9"/>
+        </svg>
+        <span class="laser l1"></span>
+        <span class="laser l2"></span>
+      </div>
+      <div class="freighter">
+        <svg class="ship" width="130" height="50" viewBox="0 0 124 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 30 L20 17 L94 15 L110 23 L110 31 L94 35 L20 35 Z" fill="#aeb9c4" stroke="#6f8696" stroke-width="1"/>
+          <rect x="42" y="9" width="28" height="7" rx="1.5" fill="#9aa7b3"/>
+          <circle cx="100" cy="23" r="2" fill="#9fe9ff"/>
+          <rect x="0" y="23" width="6" height="3" rx="1.5" fill="#9fe9ff" opacity=".9"/>
+          <rect x="0" y="28" width="6" height="3" rx="1.5" fill="#9fe9ff" opacity=".9"/>
+          <line x1="30" y1="22" x2="86" y2="21" stroke="#8294a3" stroke-width="1" opacity=".5"/>
+        </svg>
+      </div>
+    </div>
   </div>
   <div class="scan"></div>
 
@@ -253,6 +342,22 @@
         raf=null;
       });
     });
+  })();
+
+  // hyperspace arrival burst (plays once on load, then clears to the calm starfield)
+  (function(){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const hyper=document.createElement('div'); hyper.className='hyper';
+    const N=26;
+    for(let i=0;i<N;i++){
+      const s=document.createElement('span'); s.className='hs';
+      const a=(360/N)*i + (Math.random()*8-4);
+      s.style.setProperty('--a', a.toFixed(1)+'deg');
+      s.style.animationDelay=(Math.random()*0.12).toFixed(2)+'s';
+      hyper.appendChild(s);
+    }
+    document.body.appendChild(hyper);
+    setTimeout(()=>hyper.remove(), 1300);
   })();
 </script>
 </body>

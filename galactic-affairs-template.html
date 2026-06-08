@@ -25,7 +25,12 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:#000;
+    background:
+      radial-gradient(1200px 760px at 16% -12%, rgba(74,216,255,.11), transparent 60%),
+      radial-gradient(1000px 820px at 112% 18%, rgba(74,216,255,.07), transparent 55%),
+      radial-gradient(900px 720px at 88% 118%, rgba(230,185,74,.06), transparent 55%),
+      radial-gradient(1500px 1100px at 50% 46%, #071726, #03101d 68%, #01070d);
+    position:relative;overflow-x:hidden;
     font-family:'Saira',sans-serif;
     color:var(--text);
     min-height:100vh;
@@ -237,9 +242,69 @@
     .masthead{font-size:34px;}
     .cols{grid-template-columns:1fr;gap:18px;}
   }
+
+  /* ---- ambient deep-space backdrop ---- */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%);}
+  .space{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .space .planet{position:absolute;right:-130px;bottom:-180px;width:440px;height:440px;border-radius:50%;
+    background:radial-gradient(circle at 36% 34%, rgba(74,216,255,.12), rgba(74,216,255,.03) 46%, transparent 70%);filter:blur(2px);}
+  #stars{position:absolute;inset:0;}
+  .star{position:absolute;border-radius:50%;background:#cdeffd;opacity:.6;animation:tw var(--d,4s) ease-in-out infinite;}
+  @keyframes tw{0%,100%{opacity:.14;}50%{opacity:.92;}}
+  .reticle{position:fixed;left:50%;top:50%;width:min(1180px,128vmax);aspect-ratio:1;transform:translate(-50%,-50%);
+    z-index:0;pointer-events:none;filter:drop-shadow(0 0 12px rgba(74,216,255,.14));}
+  .ret-spin{transform-box:fill-box;transform-origin:center;animation:spin 80s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .scan{position:fixed;left:0;right:0;top:0;height:2px;z-index:1;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(74,216,255,.5),transparent);filter:blur(1px);opacity:.4;animation:scan 9s linear infinite;}
+  @keyframes scan{0%{transform:translateY(-12vh);}100%{transform:translateY(112vh);}}
+  .frame{position:relative;z-index:2;}
+  .toolbar{position:relative;z-index:4;}
+  @media (prefers-reduced-motion:reduce){.star,.ret-spin,.scan{animation:none!important;}}
+
+  /* comets / shooting stars */
+  .comet{position:absolute;top:0;left:0;width:120px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,#cfeeff);box-shadow:0 0 6px rgba(159,233,253,.7);
+    opacity:0;transform:translate(-14vw,-14vh) rotate(32deg);animation:comet 17s linear infinite 6s;}
+  .comet.c2{width:90px;animation:comet2 23s linear infinite 13s;}
+  @keyframes comet{0%{opacity:0;transform:translate(-14vw,-14vh) rotate(32deg);}
+    1.5%{opacity:1;}9%{opacity:1;transform:translate(118vw,82vh) rotate(32deg);}9.6%{opacity:0;}
+    100%{opacity:0;transform:translate(118vw,82vh) rotate(32deg);}}
+  @keyframes comet2{0%{opacity:0;transform:translate(116vw,-12vh) rotate(150deg);}
+    1.5%{opacity:1;}8%{opacity:1;transform:translate(-16vw,74vh) rotate(150deg);}8.6%{opacity:0;}
+    100%{opacity:0;transform:translate(-16vw,74vh) rotate(150deg);}}
+  /* one-time masthead light sweep on open (finishes before any screenshot) */
+  .masthead{position:relative;}
+  .masthead::after{content:"";position:absolute;top:0;bottom:0;left:0;width:55%;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(159,233,253,.5),transparent);
+    mix-blend-mode:screen;transform:translateX(-130%);animation:mastheadSweep 1.6s ease-in-out .4s 1 both;}
+  @keyframes mastheadSweep{from{transform:translateX(-130%);}to{transform:translateX(260%);}}
+  @media (prefers-reduced-motion:reduce){.comet{display:none!important;}.masthead::after{animation:none!important;}}
 </style>
 </head>
 <body class="guides">
+  <div class="space">
+    <div class="planet"></div>
+    <div id="stars"></div>
+    <svg class="reticle" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#4ad8ff" fill="none">
+        <circle cx="300" cy="300" r="120" stroke-width="1" opacity=".16"/>
+        <circle cx="300" cy="300" r="180" stroke-width="1" opacity=".10"/>
+        <circle cx="300" cy="300" r="258" stroke-width="1" stroke-dasharray="1 9" opacity=".18"/>
+        <circle cx="300" cy="300" r="288" stroke-width="5" stroke-dasharray="2 24" opacity=".22"/>
+        <g class="ret-spin"><circle cx="300" cy="300" r="216" stroke-width="1.4" stroke-dasharray="3 14" opacity=".30"/></g>
+        <line x1="300" y1="2" x2="300" y2="40" stroke-width="1" opacity=".18"/>
+        <line x1="300" y1="560" x2="300" y2="598" stroke-width="1" opacity=".18"/>
+        <line x1="2" y1="300" x2="40" y2="300" stroke-width="1" opacity=".18"/>
+        <line x1="560" y1="300" x2="598" y2="300" stroke-width="1" opacity=".18"/>
+      </g>
+    </svg>
+    <span class="comet"></span>
+    <span class="comet c2"></span>
+  </div>
+  <div class="scan"></div>
+
 
   <div class="toolbar">
     <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. Use <b>&minus; / +</b> to scale up for a sharper image. When you're ready, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
@@ -479,6 +544,31 @@
 
   // on open, restore the last draft if there is one
   (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
+
+  // ambient backdrop: starfield + gentle mouse parallax
+  (function(){
+    const wrap=document.getElementById('stars'); if(!wrap) return;
+    for(let i=0;i<70;i++){
+      const s=document.createElement('div'); s.className='star';
+      s.style.left=(Math.random()*100).toFixed(2)+'%';
+      s.style.top=(Math.random()*100).toFixed(2)+'%';
+      const sz=(Math.random()*1.6+0.6); s.style.width=s.style.height=sz.toFixed(1)+'px';
+      s.style.setProperty('--d',(Math.random()*3.5+2.5).toFixed(1)+'s');
+      s.style.animationDelay=(Math.random()*5).toFixed(1)+'s';
+      if(Math.random()<0.18){ s.style.background='#9fe9ff'; s.style.boxShadow='0 0 6px rgba(74,216,255,.8)'; }
+      wrap.appendChild(s);
+    }
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const reticle=document.querySelector('.reticle'); let raf=null,x=0,y=0;
+    addEventListener('mousemove',(e)=>{
+      x=e.clientX/innerWidth-0.5; y=e.clientY/innerHeight-0.5;
+      if(!raf) raf=requestAnimationFrame(()=>{
+        wrap.style.transform='translate('+(x*-14).toFixed(1)+'px,'+(y*-14).toFixed(1)+'px)';
+        if(reticle) reticle.style.transform='translate(calc(-50% + '+(x*-22).toFixed(1)+'px), calc(-50% + '+(y*-22).toFixed(1)+'px))';
+        raf=null;
+      });
+    });
+  })();
 </script>
 </body>
 </html>
