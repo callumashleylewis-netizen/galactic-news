@@ -48,6 +48,12 @@
   .toolbar .zoomctl button{border:none;background:none;color:var(--cyan-bright);font-size:17px;line-height:1;padding:2px 8px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
   .toolbar .zoomctl button:hover{background:rgba(74,216,255,.18);}
   .toolbar .zoomctl #zoomReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:44px;text-align:center;color:var(--text);}
+  .toolbar .pagectl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--cyan-dim);border-radius:7px;padding:2px 6px;}
+  .toolbar .pagectl button{border:none;background:none;color:var(--cyan-bright);font-size:18px;line-height:1;padding:2px 9px;cursor:pointer;border-radius:4px;text-transform:none;letter-spacing:0;}
+  .toolbar .pagectl button:hover{background:rgba(74,216,255,.18);}
+  .toolbar .pagectl #pageReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:42px;text-align:center;color:var(--text);}
+  .toolbar button:disabled{opacity:.4;cursor:default;}
+  .toolbar .pagectl button:disabled:hover{background:none;}
   body.clean .toolbar{display:none;}
   body.clean .reopen{display:block;}
   .reopen{position:fixed;top:12px;left:12px;z-index:50;display:none;
@@ -237,6 +243,9 @@
     <button id="addSub">+ Subtitle</button>
     <button id="addBody">+ Text</button>
     <button id="addImg">+ Image</button>
+    <span class="pagectl"><button id="pagePrev" type="button" aria-label="Previous page">&#8249;</button><span id="pageReadout">1 / 1</span><button id="pageNext" type="button" aria-label="Next page">&#8250;</button></span>
+    <button id="pageAdd" type="button">+ Page</button>
+    <button id="pageDel" type="button">Delete page</button>
     <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
     <button id="saveBtn" type="button">Save</button>
     <button id="savesBtn" type="button">Saves</button>
@@ -436,6 +445,56 @@
 
   const DEFAULT_STATE=captureState();
 
+  // ---- multi-page support: up to 15 blank sheets, each like this one ----
+  const MAX_PAGES=15;
+  function blankPage(){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+  let pages=[blankPage()], current=0;
+  function syncCurrent(){ pages[current]=captureState(); }
+  function captureDoc(){ syncCurrent(); return { v:2, current, pages }; }
+  function restoreDoc(doc){
+    let list;
+    if(doc && Array.isArray(doc.pages)) list=doc.pages;
+    else if(doc && Array.isArray(doc.fields)) list=[doc];   // legacy single-page save
+    else return false;
+    pages=list.map(s=>(s && Array.isArray(s.fields)) ? s : blankPage());
+    if(!pages.length) pages=[blankPage()];
+    current=Math.min(Math.max(0,(doc && doc.current)|0), pages.length-1);
+    restoreState(pages[current]);
+    updatePageUI();
+    return true;
+  }
+  const pagePrev=document.getElementById('pagePrev'),
+        pageNext=document.getElementById('pageNext'),
+        pageAdd=document.getElementById('pageAdd'),
+        pageDel=document.getElementById('pageDel'),
+        pageReadout=document.getElementById('pageReadout');
+  function updatePageUI(){
+    pageReadout.textContent=(current+1)+' / '+pages.length;
+    pagePrev.disabled=current===0;
+    pageNext.disabled=current===pages.length-1;
+    pageAdd.disabled=pages.length>=MAX_PAGES;
+    pageDel.disabled=pages.length<=1;
+  }
+  function gotoPage(i){
+    i=Math.max(0,Math.min(pages.length-1,i));
+    if(i===current) return;
+    syncCurrent(); current=i; restoreState(pages[current]); updatePageUI(); scheduleDraft();
+  }
+  pagePrev.onclick=()=>gotoPage(current-1);
+  pageNext.onclick=()=>gotoPage(current+1);
+  pageAdd.onclick=()=>{
+    if(pages.length>=MAX_PAGES){ toast('Maximum of 15 pages'); return; }
+    syncCurrent(); pages.push(blankPage()); current=pages.length-1;
+    restoreState(pages[current]); updatePageUI(); scheduleDraft(); toast('Page '+(current+1)+' added');
+  };
+  pageDel.onclick=()=>{
+    if(pages.length<=1){ toast('This is the only page'); return; }
+    if(!confirm('Delete page '+(current+1)+'? Everything on it will be removed. Other pages are kept.')) return;
+    pages.splice(current,1);
+    if(current>=pages.length) current=pages.length-1;
+    restoreState(pages[current]); updatePageUI(); scheduleDraft(); toast('Page deleted');
+  };
+
   let toastTimer=null;
   function toast(msg){
     const t=document.getElementById('toast');
@@ -478,7 +537,7 @@
     const saves=lsGet(SAVES_KEY)||[];
     const now=new Date();
     const name='Bulletin — '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
-    saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureState() });
+    saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureDoc() });
     if(lsSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
     else { toast('Save too large to store — try fewer or smaller images'); }
   }
@@ -495,25 +554,29 @@
     const saves=lsGet(SAVES_KEY)||[];
     if(btn.getAttribute('data-act')==='load'){
       const it=saves.find(s=>s.id===id);
-      if(it && restoreState(it.data)){ lsSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
+      if(it && restoreDoc(it.data)){ lsSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
       else { toast("Couldn't load this save"); }
     } else {
       lsSet(SAVES_KEY, saves.filter(s=>s.id!==id)); renderSaves();
     }
   });
   document.getElementById('freshBtn').onclick=()=>{
-    if(!confirm('Start a fresh canvas? Your current unsaved work will be cleared. Saved bulletins are kept.')) return;
-    restoreState(DEFAULT_STATE); lsSet(DRAFT_KEY,DEFAULT_STATE); closeSaves(); toast('Fresh canvas');
+    if(!confirm('Start a fresh bulletin? All pages and current unsaved work will be cleared. Saved bulletins are kept.')) return;
+    pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); lsSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
   };
 
   // auto-draft: a MutationObserver catches text edits, adds, drags, resizes,
   // and deletes so you return to where you left off
   let draftTimer=null;
-  function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(DRAFT_KEY,captureState()),700); }
+  function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(DRAFT_KEY,captureDoc()),700); }
   new MutationObserver(scheduleDraft).observe(frameEl,{childList:true,subtree:true,attributes:true,characterData:true});
-  window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureState()));
+  window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureDoc()));
 
-  (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
+  (function(){
+    const draft=lsGet(DRAFT_KEY);
+    if(!(draft && restoreDoc(draft))){ pages=[blankPage()]; current=0; restoreState(pages[0]); }
+    updatePageUI();
+  })();
 
   // ambient backdrop: starfield + gentle mouse parallax
   (function(){
