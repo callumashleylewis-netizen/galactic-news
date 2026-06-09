@@ -131,6 +131,10 @@
     box-shadow:0 0 8px rgba(74,216,255,.5);margin:13px 0 0;}
 
   .canvas{position:relative;min-height:560px;margin:14px 0;}
+  #guides{position:absolute;inset:0;pointer-events:none;z-index:100000;}
+  #guides .g{position:absolute;background:#ff3d7f;box-shadow:0 0 4px rgba(255,61,127,.85);}
+  #guides .g.v{top:0;bottom:0;width:1px;}
+  #guides .g.h{left:0;right:0;height:1px;}
   #grid{position:absolute;inset:0;pointer-events:none;
     background-image:linear-gradient(rgba(74,216,255,.06) 1px,transparent 1px),
       linear-gradient(90deg,rgba(74,216,255,.06) 1px,transparent 1px);
@@ -238,7 +242,7 @@
 
 
   <div class="toolbar">
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use <b>&minus; / +</b> to scale up for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings the toolbar back.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Pink guides appear as you drag, snapping to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Use <b>&minus; / +</b> to scale up for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings the toolbar back.</div>
     <button id="addTitle">+ Title</button>
     <button id="addSub">+ Subtitle</button>
     <button id="addBody">+ Text</button>
@@ -302,6 +306,35 @@
   const canvas=document.getElementById('canvas');
   const fileInput=document.getElementById('fileInput');
   const emptyHint=document.getElementById('emptyHint');
+  const guides=document.createElement('div'); guides.id='guides'; canvas.appendChild(guides);
+  const SNAP=6;
+  function clearGuides(){ if(guides.childNodes.length) guides.innerHTML=''; }
+  function snapDrag(dragEl, L, T){
+    const W=dragEl.offsetWidth, H=dragEl.offsetHeight;
+    const cw=canvas.clientWidth, ch=canvas.clientHeight;
+    const xs=[0, cw/2, cw], ys=[0, ch/2, ch];
+    canvas.querySelectorAll('.el').forEach(o=>{
+      if(o===dragEl) return;
+      const oL=parseFloat(o.style.left)||0, oT=parseFloat(o.style.top)||0, oW=o.offsetWidth, oH=o.offsetHeight;
+      xs.push(oL, oL+oW/2, oL+oW); ys.push(oT, oT+oH/2, oT+oH);
+    });
+    let bx=null;
+    [[L,0],[L+W/2,W/2],[L+W,W]].forEach(([e,off])=>{ xs.forEach(c=>{ const d=Math.abs(e-c); if(d<=SNAP && (!bx||d<bx.d)) bx={d,nl:c-off}; }); });
+    if(bx) L=bx.nl;
+    let by=null;
+    [[T,0],[T+H/2,H/2],[T+H,H]].forEach(([e,off])=>{ ys.forEach(c=>{ const d=Math.abs(e-c); if(d<=SNAP && (!by||d<by.d)) by={d,nt:c-off}; }); });
+    if(by) T=by.nt;
+    const ex=[L,L+W/2,L+W], ey=[T,T+H/2,T+H], vx=[], hy=[];
+    xs.forEach(c=>{ if(ex.some(e=>Math.abs(e-c)<0.5)) vx.push(Math.round(c)); });
+    ys.forEach(c=>{ if(ey.some(e=>Math.abs(e-c)<0.5)) hy.push(Math.round(c)); });
+    return {left:L, top:T, vx:[...new Set(vx)], hy:[...new Set(hy)]};
+  }
+  function showGuides(vx, hy){
+    let html='';
+    vx.forEach(x=>{ html+='<div class="g v" style="left:'+x+'px"></div>'; });
+    hy.forEach(y=>{ html+='<div class="g h" style="top:'+y+'px"></div>'; });
+    guides.innerHTML=html;
+  }
   let topZ=10;
   let zoomScale=1;
 
@@ -335,8 +368,13 @@
       el.style.zIndex=(++topZ);
       const sx=e.clientX, sy=e.clientY;
       const ox=parseFloat(el.style.left)||0, oy=parseFloat(el.style.top)||0;
-      function mv(ev){ el.style.left=(ox+(ev.clientX-sx)/zoomScale)+'px'; el.style.top=(oy+(ev.clientY-sy)/zoomScale)+'px'; }
-      function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); clampToCanvas(el); }
+      function mv(ev){
+        let L=ox+(ev.clientX-sx)/zoomScale, T=oy+(ev.clientY-sy)/zoomScale;
+        if(ev.altKey){ clearGuides(); }
+        else { const r=snapDrag(el,L,T); L=r.left; T=r.top; showGuides(r.vx,r.hy); }
+        el.style.left=L+'px'; el.style.top=T+'px';
+      }
+      function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); clearGuides(); clampToCanvas(el); }
       document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
     });
     el.addEventListener('pointerdown',()=>{ el.style.zIndex=(++topZ); });
