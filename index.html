@@ -136,7 +136,7 @@
   .foot .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:24px;color:var(--cyan-bright);text-shadow:0 0 10px rgba(74,216,255,.4);}
   .foot .meta{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan-dim);text-align:right;line-height:1.7;}
 
-  /* ---- entrance reveal (only when JS is on; content stays visible without it) ---- */
+  /* entrance reveal */
   .js .space{opacity:0;animation:fadein 1.3s ease .1s forwards;}
   .js .frame{opacity:0;animation:fadein .85s ease forwards;}
   .js .reveal{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;}
@@ -260,7 +260,7 @@
     }
   })();
 
-  // stardate readout (year.day-of-year)
+  // stardate readout
   (function(){
     const el=document.getElementById('sd'); if(!el) return;
     const now=new Date();
@@ -269,7 +269,7 @@
     el.textContent=now.getFullYear()+'.'+String(doy).padStart(3,'0');
   })();
 
-  // subtle mouse parallax (depth), skipped when reduced motion is preferred
+  // mouse parallax
   (function(){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const stars=document.getElementById('stars');
@@ -285,7 +285,7 @@
     });
   })();
 
-  // hyperspace arrival burst (plays once on load, then clears to the calm starfield)
+  // hyperspace burst
   (function(){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const hyper=document.createElement('div'); hyper.className='hyper';

@@ -209,7 +209,7 @@
   @keyframes comet2{0%{opacity:0;transform:translate(116vw,-12vh) rotate(150deg);}
     1.5%{opacity:1;}8%{opacity:1;transform:translate(-16vw,74vh) rotate(150deg);}8.6%{opacity:0;}
     100%{opacity:0;transform:translate(-16vw,74vh) rotate(150deg);}}
-  /* one-time masthead light sweep on open (finishes before any screenshot) */
+  /* masthead sweep */
   .masthead{position:relative;}
   .masthead::after{content:"";position:absolute;top:0;bottom:0;left:0;width:55%;pointer-events:none;
     background:linear-gradient(90deg,transparent,rgba(159,233,253,.5),transparent);
@@ -422,8 +422,7 @@
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
 
-  // ---- saving feature (browser localStorage; works from your GitHub Pages
-  // link or a downloaded copy, not the in-chat preview) ----
+  // saving (localStorage)
   const SAVES_KEY='galactic-affairs-blank-saves';
   const DRAFT_KEY='galactic-affairs-blank-draft';
 
@@ -477,7 +476,7 @@
 
   const DEFAULT_STATE=captureState();
 
-  // ---- multi-page support: up to 15 blank sheets, each like this one ----
+  // multi-page (up to 15 sheets)
   const MAX_PAGES=15;
   function blankPage(){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
   let pages=[blankPage()], current=0;
@@ -597,8 +596,7 @@
     pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); lsSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
   };
 
-  // auto-draft: a MutationObserver catches text edits, adds, drags, resizes,
-  // and deletes so you return to where you left off
+  // auto-draft
   let draftTimer=null;
   function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(DRAFT_KEY,captureDoc()),700); }
   new MutationObserver(scheduleDraft).observe(frameEl,{childList:true,subtree:true,attributes:true,characterData:true});
@@ -610,7 +608,7 @@
     updatePageUI();
   })();
 
-  // ambient backdrop: starfield + gentle mouse parallax
+  // ambient backdrop
   (function(){
     const wrap=document.getElementById('stars'); if(!wrap) return;
     for(let i=0;i<70;i++){

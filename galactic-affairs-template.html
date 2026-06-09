@@ -254,7 +254,7 @@
   @keyframes comet2{0%{opacity:0;transform:translate(116vw,-12vh) rotate(150deg);}
     1.5%{opacity:1;}8%{opacity:1;transform:translate(-16vw,74vh) rotate(150deg);}8.6%{opacity:0;}
     100%{opacity:0;transform:translate(-16vw,74vh) rotate(150deg);}}
-  /* one-time masthead light sweep on open (finishes before any screenshot) */
+  /* masthead sweep */
   .masthead{position:relative;}
   .masthead::after{content:"";position:absolute;top:0;bottom:0;left:0;width:55%;pointer-events:none;
     background:linear-gradient(90deg,transparent,rgba(159,233,253,.5),transparent);
@@ -402,8 +402,7 @@
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
 
-  // ---- saving feature (uses browser localStorage; works when opened from
-  // your GitHub Pages link or a downloaded copy, not the in-chat preview) ----
+  // saving (localStorage)
   const SAVES_KEY='galactic-affairs-saves';
   const DRAFT_KEY='galactic-affairs-draft';
 
@@ -421,7 +420,7 @@
     return true;
   }
 
-  // remember the shipped default before any draft is applied
+  // shipped default
   const DEFAULT_STATE=captureState();
 
   let toastTimer=null;
@@ -499,7 +498,7 @@
     restoreState(DEFAULT_STATE); lsSet(DRAFT_KEY,DEFAULT_STATE); closeSaves(); toast('Fresh bulletin');
   };
 
-  // auto-draft so you return to where you left off; debounced on edits + on close
+  // auto-draft
   let draftTimer=null;
   frameEl.addEventListener('input',()=>{
     clearTimeout(draftTimer);
@@ -507,10 +506,10 @@
   });
   window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureState()));
 
-  // on open, restore the last draft if there is one
+  // restore last draft
   (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
 
-  // ambient backdrop: starfield + gentle mouse parallax
+  // ambient backdrop
   (function(){
     const wrap=document.getElementById('stars'); if(!wrap) return;
     for(let i=0;i<70;i++){
