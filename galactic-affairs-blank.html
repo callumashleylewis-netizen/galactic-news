@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Galactic Affairs — Blank Canvas (design by hand)</title>
+<title>Galactic Affairs | Blank Canvas (design by hand)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Saira:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -29,12 +29,20 @@
 
   .toolbar{
     width:900px;max-width:100%;background:rgba(10,31,51,.7);
-    border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+    border:1px solid var(--line);border-radius:10px;padding:10px 14px;
     font-family:'Chakra Petch',sans-serif;font-size:13px;color:var(--text-dim);
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    display:flex;align-items:center;gap:8px 0;flex-wrap:wrap;
   }
   .toolbar b{color:var(--cyan-bright);font-weight:600;}
-  .toolbar .hint{width:100%;line-height:1.5;margin-bottom:4px;}
+  .tb-group{display:inline-flex;align-items:center;gap:7px;padding:3px 12px;
+    border-right:1px solid rgba(74,216,255,.16);}
+  .tb-group:first-child{padding-left:0;}
+  .tb-label{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--cyan-dim);margin-right:3px;user-select:none;}
+  #helpBtn{margin-left:12px;border-radius:50%;width:30px;height:30px;padding:0;font-size:13px;}
+  .toolbar .hint{display:none;width:100%;line-height:1.6;margin-top:8px;padding-top:10px;
+    border-top:1px solid rgba(74,216,255,.16);}
+  .toolbar.show-help .hint{display:block;}
   .toolbar button{
     font-family:'Chakra Petch',sans-serif;background:rgba(74,216,255,.12);
     color:var(--cyan-bright);border:1px solid var(--cyan-dim);border-radius:7px;
@@ -130,7 +138,14 @@
   .rule{height:2px;background:linear-gradient(90deg,var(--cyan),rgba(74,216,255,.05));
     box-shadow:0 0 8px rgba(74,216,255,.5);margin:13px 0 0;}
 
-  .canvas{position:relative;min-height:560px;margin:14px 0;}
+  .canvas{position:relative;height:560px;margin:14px 0 20px;}
+  .canvas-handle{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
+    width:76px;height:14px;border-radius:7px;background:rgba(74,216,255,.22);
+    border:1px solid var(--cyan-dim);cursor:ns-resize;z-index:99999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .canvas-handle:hover{background:rgba(74,216,255,.34);}
+  .canvas-handle i{width:16px;height:2px;background:var(--cyan-bright);border-radius:1px;opacity:.85;display:block;}
+  body.clean .canvas-handle{display:none;}
   #guides{position:absolute;inset:0;pointer-events:none;z-index:100000;}
   #guides .g{position:absolute;background:#ff3d7f;box-shadow:0 0 4px rgba(255,61,127,.85);}
   #guides .g.v{top:0;bottom:0;width:1px;}
@@ -149,6 +164,16 @@
     font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--cyan-bright);
     padding:2px 4px 2px 6px;cursor:move;user-select:none;text-transform:uppercase;}
   .el-bar .del{background:none;border:none;color:#ff9a9a;font-size:15px;line-height:1;cursor:pointer;padding:0 3px;}
+  .el-bar .fontctl{display:inline-flex;align-items:center;gap:1px;}
+  .el-bar .fontctl button{background:none;border:none;color:var(--cyan-bright);font-size:11px;line-height:1;
+    padding:0 4px;cursor:pointer;text-transform:none;letter-spacing:0;font-family:'Chakra Petch',sans-serif;}
+  .el-bar .fontctl button:hover{color:#fff;}
+  .el-bar .fontctl input{width:30px;background:rgba(5,17,30,.55);border:1px solid rgba(74,216,255,.35);
+    color:var(--text);font-family:'Chakra Petch',sans-serif;font-size:10px;text-align:center;
+    border-radius:3px;padding:1px 0;}
+  .el-bar .fontctl input::-webkit-outer-spin-button,
+  .el-bar .fontctl input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .el-bar .fontctl input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   .el-box{outline:none;}
   .el-box.text{resize:both;overflow:hidden;min-width:70px;min-height:26px;
     border:1px dashed rgba(74,216,255,.4);padding:4px 9px;background:rgba(5,17,30,.35);color:var(--text);
@@ -242,18 +267,31 @@
 
 
   <div class="toolbar">
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Pink guides appear as you drag, snapping to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Use <b>&minus; / +</b> to scale up for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings the toolbar back.</div>
-    <button id="addTitle">+ Title</button>
-    <button id="addSub">+ Subtitle</button>
-    <button id="addBody">+ Text</button>
-    <button id="addImg">+ Image</button>
-    <span class="pagectl"><button id="pagePrev" type="button" aria-label="Previous page">&#8249;</button><span id="pageReadout">1 / 1</span><button id="pageNext" type="button" aria-label="Next page">&#8250;</button></span>
-    <button id="pageAdd" type="button">+ Page</button>
-    <button id="pageDel" type="button">Delete page</button>
-    <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
-    <button id="saveBtn" type="button">Save</button>
-    <button id="savesBtn" type="button">Saves</button>
-    <button id="cleanBtn" class="clean">Clean view (for screenshot)</button>
+    <div class="tb-group">
+      <span class="tb-label">Insert</span>
+      <button id="addTitle">+ Title</button>
+      <button id="addSub">+ Subtitle</button>
+      <button id="addBody">+ Text</button>
+      <button id="addImg">+ Image</button>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Pages</span>
+      <span class="pagectl"><button id="pagePrev" type="button" aria-label="Previous page">&#8249;</button><span id="pageReadout">1 / 1</span><button id="pageNext" type="button" aria-label="Next page">&#8250;</button></span>
+      <button id="pageAdd" type="button">+ Page</button>
+      <button id="pageDel" type="button" title="Delete this page">&minus; Page</button>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">View</span>
+      <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Work</span>
+      <button id="saveBtn" type="button">Save</button>
+      <button id="savesBtn" type="button">Saves</button>
+    </div>
+    <button id="helpBtn" type="button" title="How this works">?</button>
+    <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
   </div>
   <button id="reopenBtn" class="reopen" type="button">&#9998; Edit</button>
@@ -301,6 +339,22 @@
   const fileInput=document.getElementById('fileInput');
   const emptyHint=document.getElementById('emptyHint');
   const guides=document.createElement('div'); guides.id='guides'; canvas.appendChild(guides);
+
+  // page height grip: drag to make the canvas taller or shorter
+  const sizer=document.createElement('div'); sizer.className='canvas-handle';
+  sizer.title='Drag to change page height'; sizer.innerHTML='<i></i><i></i>';
+  canvas.appendChild(sizer);
+  sizer.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const sy=e.clientY, sh=canvas.clientHeight;
+    function mv(ev){
+      const h=Math.max(380,Math.min(2200,Math.round(sh+(ev.clientY-sy)/zoomScale)));
+      canvas.style.height=h+'px';
+    }
+    function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); }
+    document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+  });
+
   const SNAP=6;
   function clearGuides(){ if(guides.childNodes.length) guides.innerHTML=''; }
   function snapDrag(dragEl, L, T){
@@ -357,7 +411,7 @@
     bar.appendChild(grip); bar.appendChild(del); el.appendChild(bar);
 
     bar.addEventListener('pointerdown',(e)=>{
-      if(e.target===del) return;
+      if(e.target.closest('.del,.fontctl')) return;
       e.preventDefault();
       el.style.zIndex=(++topZ);
       const sx=e.clientX, sy=e.clientY;
@@ -377,13 +431,37 @@
     return el;
   }
 
+  const FONT_DEFAULTS={title:30,sub:18,body:15};
+  function attachFontCtl(el,box,kind){
+    const bar=el.querySelector('.el-bar');
+    const wrap=document.createElement('span'); wrap.className='fontctl'; wrap.title='Text size';
+    const minus=document.createElement('button'); minus.type='button'; minus.textContent='A\u2212';
+    const input=document.createElement('input'); input.type='number'; input.min='8'; input.max='96';
+    const plus=document.createElement('button'); plus.type='button'; plus.textContent='A+';
+    const cur=()=>Math.round(parseFloat(box.style.fontSize)||FONT_DEFAULTS[kind]||15);
+    function apply(n){
+      n=Math.round(n); if(!isFinite(n)) n=cur();
+      n=Math.max(8,Math.min(96,n));
+      box.style.fontSize=n+'px'; input.value=n;
+    }
+    input.value=cur();
+    minus.addEventListener('click',(e)=>{e.stopPropagation(); apply(cur()-1);});
+    plus.addEventListener('click',(e)=>{e.stopPropagation(); apply(cur()+1);});
+    input.addEventListener('pointerdown',(e)=>e.stopPropagation());
+    input.addEventListener('input',()=>{ const v=parseFloat(input.value); if(v>=8&&v<=96) box.style.fontSize=Math.round(v)+'px'; });
+    input.addEventListener('change',()=>apply(parseFloat(input.value)));
+    wrap.appendChild(minus); wrap.appendChild(input); wrap.appendChild(plus);
+    bar.insertBefore(wrap, bar.querySelector('.del'));
+  }
+
   function addText(kind){
     const el=makeEl();
     const box=document.createElement('div');
     box.className='el-box text '+kind;
     box.contentEditable='true';
-    box.textContent = kind==='title' ? 'Title text' : (kind==='sub' ? 'Subtitle text' : 'Body text \u2014 click to edit.');
+    box.textContent = kind==='title' ? 'Title text' : (kind==='sub' ? 'Subtitle text' : 'Body text, click to edit.');
     el.appendChild(box);
+    attachFontCtl(el,box,kind);
     box.addEventListener('focus',()=>{ if(box.dataset.touched) return; });
   }
 
@@ -431,6 +509,14 @@
   function storageOK(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; }catch(e){ return false; } }
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  // collapsible toolbar help: open on the very first visit, then live behind the ? button
+  (function(){
+    const tb=document.querySelector('.toolbar');
+    const HELP_KEY='galactic-affairs-blank-helpseen';
+    document.getElementById('helpBtn').onclick=()=>{ tb.classList.toggle('show-help'); lsSet(HELP_KEY,1); };
+    if(!lsGet(HELP_KEY)){ tb.classList.add('show-help'); lsSet(HELP_KEY,1); }
+  })();
+
   function fixedFieldEls(){ return Array.from(document.querySelectorAll('.frame [contenteditable]')).filter(el=>!canvas.contains(el)); }
   function captureState(){
     const fields=fixedFieldEls().map(el=>el.innerHTML);
@@ -440,10 +526,10 @@
       const rec={ left:el.style.left, top:el.style.top, z:el.style.zIndex,
         w:(box&&box.style.width)||'', h:(box&&box.style.height)||'' };
       if(isImg){ const img=box.querySelector('img'); rec.kind='img'; rec.src=img?img.src:''; }
-      else { rec.kind=box.classList.contains('title')?'title':(box.classList.contains('sub')?'sub':'body'); rec.html=box?box.innerHTML:''; }
+      else { rec.kind=box.classList.contains('title')?'title':(box.classList.contains('sub')?'sub':'body'); rec.html=box?box.innerHTML:''; rec.fs=(box&&box.style.fontSize)||''; }
       return rec;
     });
-    return { fields, els };
+    return { fields, els, canvasH: canvas.style.height||'' };
   }
   function recreateEl(rec){
     const el=makeEl();
@@ -459,15 +545,18 @@
       box.className='el-box text '+(rec.kind||'body');
       box.contentEditable='true';
       box.innerHTML=rec.html||'';
+      if(rec.fs) box.style.fontSize=rec.fs;
     }
     if(rec.w) box.style.width=rec.w;
     if(rec.h) box.style.height=rec.h;
     el.appendChild(box);
+    if(rec.kind!=='img') attachFontCtl(el,box,rec.kind||'body');
   }
   function restoreState(state){
     if(!state || !Array.isArray(state.fields) || !Array.isArray(state.els)) return false;
     const fEls=fixedFieldEls();
     if(state.fields.length===fEls.length){ fEls.forEach((el,i)=>el.innerHTML=state.fields[i]); }
+    canvas.style.height=state.canvasH||'';
     canvas.querySelectorAll('.el').forEach(el=>el.remove());
     state.els.forEach(recreateEl);
     hideHintIfNeeded();
@@ -564,13 +653,13 @@
     ).join('');
   }
   function saveNamed(){
-    if(!storageOK()){ toast('Storage is blocked here — open from your GitHub Pages link to save'); return; }
+    if(!storageOK()){ toast('Storage is blocked here, open from your GitHub Pages link to save'); return; }
     const saves=lsGet(SAVES_KEY)||[];
     const now=new Date();
-    const name='Bulletin — '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    const name='Bulletin, '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureDoc() });
     if(lsSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
-    else { toast('Save too large to store — try fewer or smaller images'); }
+    else { toast('Save too large to store, try fewer or smaller images'); }
   }
 
   const panel=document.getElementById('savesPanel');
