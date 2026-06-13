@@ -465,19 +465,43 @@
     box.addEventListener('focus',()=>{ if(box.dataset.touched) return; });
   }
 
+  // shrink images before storing: big screenshots become a fraction of the size
+  function compressImage(img, type){
+    const MAX=1400;
+    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    const scale=Math.min(1, MAX/w, MAX/h);
+    const cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+    const c=document.createElement('canvas'); c.width=cw; c.height=ch;
+    const ctx=c.getContext('2d');
+    // keep PNG only for small images (likely logos/crests with transparency)
+    const keepPng = (type==='image/png' && cw*ch<=420*420);
+    try{
+      if(keepPng) return c.getContext('2d').drawImage(img,0,0,cw,ch), c.toDataURL('image/png');
+      ctx.fillStyle='#05111e'; ctx.fillRect(0,0,cw,ch);     // flatten any transparency to page ink
+      ctx.drawImage(img,0,0,cw,ch);
+      return c.toDataURL('image/jpeg',0.82);
+    }catch(e){ return img.src; }   // canvas can taint on some sources; fall back to original
+  }
+
   function addImageFromFile(file){
     if(!file || !file.type || !file.type.startsWith('image/')) return;
     const reader=new FileReader();
     reader.onload=()=>{
-      const el=makeEl();
-      const box=document.createElement('div'); box.className='el-box img';
-      const img=document.createElement('img');
-      img.onload=()=>{
-        const w=280, h=Math.max(60, Math.round(280*(img.naturalHeight/img.naturalWidth)));
-        box.style.width=w+'px'; box.style.height=h+'px';
+      const probe=new Image();
+      probe.onload=()=>{
+        const src=compressImage(probe, file.type);
+        const el=makeEl();
+        const box=document.createElement('div'); box.className='el-box img';
+        const img=document.createElement('img');
+        img.onload=()=>{
+          const w=280, h=Math.max(60, Math.round(280*(img.naturalHeight/img.naturalWidth)));
+          box.style.width=w+'px'; box.style.height=h+'px';
+        };
+        img.src=src;
+        box.appendChild(img); el.appendChild(box);
       };
-      img.src=reader.result;
-      box.appendChild(img); el.appendChild(box);
+      probe.onerror=()=>toast("Couldn't read that image");
+      probe.src=reader.result;
     };
     reader.readAsDataURL(file);
   }
@@ -500,13 +524,45 @@
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
 
-  // saving (localStorage)
+  // saving: IndexedDB (room for hundreds of MB) with a localStorage fallback
   const SAVES_KEY='galactic-affairs-blank-saves';
   const DRAFT_KEY='galactic-affairs-blank-draft';
 
   function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
   function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
-  function storageOK(){ try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; }catch(e){ return false; } }
+
+  const DB_NAME='galactic-affairs-blank', DB_STORE='kv';
+  let _dbPromise=null;
+  function openDB(){
+    if(_dbPromise) return _dbPromise;
+    _dbPromise=new Promise((res,rej)=>{
+      let req; try{ req=indexedDB.open(DB_NAME,1); }catch(e){ rej(e); return; }
+      req.onupgradeneeded=()=>req.result.createObjectStore(DB_STORE);
+      req.onsuccess=()=>res(req.result);
+      req.onerror=()=>rej(req.error);
+    });
+    return _dbPromise;
+  }
+  function idbGet(k){ return openDB().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(DB_STORE,'readonly'); const rq=tx.objectStore(DB_STORE).get(k);
+    rq.onsuccess=()=>res(rq.result===undefined?null:rq.result); rq.onerror=()=>rej(rq.error);
+  })); }
+  function idbSet(k,v){ return openDB().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(DB_STORE,'readwrite'); tx.objectStore(DB_STORE).put(v,k);
+    tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
+  })); }
+  function idbDel(k){ return openDB().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(DB_STORE,'readwrite'); tx.objectStore(DB_STORE).delete(k);
+    tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error);
+  })); }
+  async function storeGet(k){ try{ return await idbGet(k); }catch(e){ return lsGet(k); } }
+  async function storeSet(k,v){ try{ await idbSet(k,v); return true; }catch(e){ return lsSet(k,v); } }
+  async function migrateFromLS(){
+    try{
+      const s=lsGet(SAVES_KEY); if(s && !(await idbGet(SAVES_KEY))) await idbSet(SAVES_KEY,s);
+      const d=lsGet(DRAFT_KEY); if(d && !(await idbGet(DRAFT_KEY))) await idbSet(DRAFT_KEY,d);
+    }catch(e){}
+  }
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   // collapsible toolbar help: open on the very first visit, then live behind the ? button
@@ -639,9 +695,9 @@
     }
     return order.map(l=>({label:l, items:groups[l]}));
   }
-  function renderSaves(){
+  async function renderSaves(){
     const list=document.getElementById('savesList');
-    const saves=(lsGet(SAVES_KEY)||[]).sort((a,b)=>b.ts-a.ts);
+    const saves=((await storeGet(SAVES_KEY))||[]).slice().sort((a,b)=>b.ts-a.ts);
     if(!saves.length){ list.innerHTML='<div class="empty">No saved bulletins yet. Click Save to keep your current work.</div>'; return; }
     list.innerHTML=groupByDate(saves).map(g=>
       '<div class="grp-label">'+escapeHtml(g.label)+'</div>'+
@@ -652,14 +708,13 @@
       ).join('')
     ).join('');
   }
-  function saveNamed(){
-    if(!storageOK()){ toast('Storage is blocked here, open from your GitHub Pages link to save'); return; }
-    const saves=lsGet(SAVES_KEY)||[];
+  async function saveNamed(){
+    const saves=(await storeGet(SAVES_KEY))||[];
     const now=new Date();
     const name='Bulletin, '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureDoc() });
-    if(lsSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
-    else { toast('Save too large to store, try fewer or smaller images'); }
+    if(await storeSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
+    else { toast('Storage is full or blocked here, try fewer or smaller images'); }
   }
 
   const panel=document.getElementById('savesPanel');
@@ -668,31 +723,33 @@
   document.getElementById('saveBtn').onclick=saveNamed;
   document.getElementById('savesBtn').onclick=()=>{ panel.classList.contains('open')?closeSaves():openSaves(); };
   document.getElementById('savesClose').onclick=closeSaves;
-  document.getElementById('savesList').addEventListener('click',(e)=>{
+  document.getElementById('savesList').addEventListener('click', async (e)=>{
     const btn=e.target.closest('button[data-act]'); if(!btn) return;
     const id=btn.getAttribute('data-id');
-    const saves=lsGet(SAVES_KEY)||[];
+    const saves=(await storeGet(SAVES_KEY))||[];
     if(btn.getAttribute('data-act')==='load'){
       const it=saves.find(s=>s.id===id);
-      if(it && restoreDoc(it.data)){ lsSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
+      if(it && restoreDoc(it.data)){ storeSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
       else { toast("Couldn't load this save"); }
     } else {
-      lsSet(SAVES_KEY, saves.filter(s=>s.id!==id)); renderSaves();
+      await storeSet(SAVES_KEY, saves.filter(s=>s.id!==id)); renderSaves();
     }
   });
   document.getElementById('freshBtn').onclick=()=>{
     if(!confirm('Start a fresh bulletin? All pages and current unsaved work will be cleared. Saved bulletins are kept.')) return;
-    pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); lsSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
+    pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); storeSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
   };
 
   // auto-draft
   let draftTimer=null;
-  function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(DRAFT_KEY,captureDoc()),700); }
+  function scheduleDraft(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>storeSet(DRAFT_KEY,captureDoc()),700); }
   new MutationObserver(scheduleDraft).observe(frameEl,{childList:true,subtree:true,attributes:true,characterData:true});
-  window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureDoc()));
+  window.addEventListener('beforeunload',()=>{ try{ storeSet(DRAFT_KEY,captureDoc()); }catch(e){} });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') storeSet(DRAFT_KEY,captureDoc()); });
 
-  (function(){
-    const draft=lsGet(DRAFT_KEY);
+  (async function(){
+    await migrateFromLS();
+    const draft=await storeGet(DRAFT_KEY);
     if(!(draft && restoreDoc(draft))){ pages=[blankPage()]; current=0; restoreState(pages[0]); }
     updatePageUI();
   })();
