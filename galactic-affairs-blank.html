@@ -241,6 +241,9 @@
     mix-blend-mode:screen;transform:translateX(-130%);animation:mastheadSweep 1.6s ease-in-out .4s 1 both;}
   @keyframes mastheadSweep{from{transform:translateX(-130%);}to{transform:translateX(260%);}}
   @media (prefers-reduced-motion:reduce){.comet{display:none!important;}.masthead::after{animation:none!important;}}
+  /* while Export PNG renders: no sweep, no caret, nothing that could land in the image */
+  body.exporting .masthead::after{display:none;}
+  body.exporting [contenteditable]{caret-color:transparent;}
 </style>
 </head>
 <body>
@@ -288,11 +291,19 @@
       <span class="tb-label">Work</span>
       <button id="saveBtn" type="button">Save</button>
       <button id="savesBtn" type="button">Saves</button>
+      <button id="draftDownBtn" type="button" title="Save every page to a file you can send to someone">Download draft</button>
+      <button id="draftLoadBtn" type="button" title="Open a draft file from someone else">Load draft</button>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Export</span>
+      <button id="exportPngBtn" type="button" title="Save this page as an image, always 1200 px wide">Export PNG</button>
+      <button id="exportTextBtn" type="button" title="Copy every box's text in reading order, for the Trello card">Export text</button>
     </div>
     <button id="helpBtn" type="button" title="How this works">?</button>
     <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S). The <b>Edit</b> button, top-left, brings everything back.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image at a fixed 1200 px width, so every issue comes out the same size. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
+    <input id="draftInput" type="file" accept="application/json,.json" hidden>
   </div>
   <button id="reopenBtn" class="reopen" type="button">&#9998; Edit</button>
 
@@ -752,6 +763,146 @@
     const draft=await storeGet(DRAFT_KEY);
     if(!(draft && restoreDoc(draft))){ pages=[blankPage()]; current=0; restoreState(pages[0]); }
     updatePageUI();
+  })();
+
+  // ---- export and draft files ----
+  (function(){
+    const exportPngBtn=document.getElementById('exportPngBtn');
+    const exportTextBtn=document.getElementById('exportTextBtn');
+    const draftDownBtn=document.getElementById('draftDownBtn');
+    const draftLoadBtn=document.getElementById('draftLoadBtn');
+    const draftInput=document.getElementById('draftInput');
+    const EXPORT_WIDTH=1200;   // every issue the same width, whatever screen it was made on
+
+    function fileStamp(){
+      const d=new Date(), p=n=>String(n).padStart(2,'0');
+      return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+    }
+    function issueLabel(){
+      const f=fixedFieldEls();                         // 0 story by, 1 issue, 2 week, 3 masthead, 4 subhead
+      const raw=((f[1]&&f[1].textContent)||'').replace(/[^0-9A-Za-z]+/g,'');
+      return (raw && raw!=='000') ? 'issue-'+raw : fileStamp();
+    }
+    function downloadBlob(blob,name){
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    }
+    function htmlToText(html){
+      const d=document.createElement('div'); d.innerHTML=html||'';
+      return (d.innerText||d.textContent||'').replace(/ /g,' ').replace(/[ \t]+\n/g,'\n').trim();
+    }
+
+    // html2canvas is fetched the first time it is needed, so the page still opens offline
+    let h2cPromise=null;
+    function loadHtml2canvas(){
+      if(window.html2canvas) return Promise.resolve(window.html2canvas);
+      if(h2cPromise) return h2cPromise;
+      h2cPromise=new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=()=>window.html2canvas?res(window.html2canvas):rej(new Error('html2canvas missing'));
+        s.onerror=()=>{ h2cPromise=null; rej(new Error('load failed')); };
+        document.head.appendChild(s);
+      });
+      return h2cPromise;
+    }
+
+    // The page corners are chamfered with clip-path, which the renderer does not honour,
+    // so trim them off the finished bitmap and redraw the cyan edge along the cut.
+    function chamfer(cv,scale){
+      const ctx=cv.getContext('2d'), c=24*scale, W=cv.width, H=cv.height;
+      const path=()=>{ ctx.beginPath(); ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c);
+        ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath(); };
+      const trim=()=>{ ctx.save(); ctx.globalCompositeOperation='destination-in'; path(); ctx.fillStyle='#000'; ctx.fill(); ctx.restore(); };
+      trim();
+      ctx.save(); path(); ctx.lineWidth=5*scale; ctx.strokeStyle='#4ad8ff'; ctx.stroke(); ctx.restore();
+      trim();
+    }
+
+    async function exportPng(){
+      exportPngBtn.disabled=true;
+      const wasClean=document.body.classList.contains('clean');
+      const sx=window.scrollX, sy=window.scrollY;
+      try{
+        toast('Rendering page '+(current+1)+'…');
+        const h2c=await loadHtml2canvas();
+        if(document.fonts && document.fonts.ready) await document.fonts.ready;
+        if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        clearGuides();
+        document.body.classList.add('clean','exporting');
+        frameEl.style.zoom=1;
+        window.scrollTo(0,0);
+        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+        const scale=EXPORT_WIDTH/frameEl.offsetWidth;
+        const cv=await h2c(frameEl,{backgroundColor:null,scale:scale,useCORS:true,logging:false});
+        chamfer(cv,scale);
+        const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+        if(!blob) throw new Error('no image');
+        const name='galactic-affairs-'+issueLabel()+(pages.length>1?'-page-'+(current+1):'')+'.png';
+        downloadBlob(blob,name);
+        toast('Exported '+cv.width+' × '+cv.height+' px');
+      }catch(e){
+        toast(navigator.onLine===false ? 'Export needs an internet connection' : 'Export failed, use Clean view and snip instead');
+      }finally{
+        document.body.classList.remove('exporting');
+        if(!wasClean) document.body.classList.remove('clean');
+        applyZoom();
+        window.scrollTo(sx,sy);
+        exportPngBtn.disabled=false;
+      }
+    }
+
+    // Every text box, top to bottom then left to right, across all pages. Images are skipped.
+    function pageText(state,idx,total){
+      const rows=(state.els||[]).filter(r=>r.kind!=='img')
+        .map(r=>({top:parseFloat(r.top)||0,left:parseFloat(r.left)||0,text:htmlToText(r.html)}))
+        .filter(r=>r.text)
+        .sort((a,b)=>(a.top-b.top)||(a.left-b.left));
+      const out=[]; if(total>1) out.push('Page '+(idx+1));
+      rows.forEach(r=>{ out.push(r.text); out.push(''); });
+      return out.join('\n').trim();
+    }
+    function exportText(){
+      syncCurrent();
+      const f=(pages[current].fields||[]).map(htmlToText);
+      const head=[];
+      head.push([f[3],f[4]].filter(Boolean).join(', '));
+      const meta=[]; if(f[0]) meta.push('Story by: '+f[0]); if(f[1]) meta.push('Issue '+f[1]); if(f[2]) meta.push(f[2]);
+      if(meta.length) head.push(meta.join(' | '));
+      const body=pages.map((p,i)=>pageText(p,i,pages.length)).filter(Boolean).join('\n\n');
+      const full=head.filter(Boolean).join('\n')+'\n\n'+body+'\n';
+      const words=full.split(/\s+/).filter(Boolean).length;
+      const write=(navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(full) : Promise.reject();
+      write.then(()=>toast('Copied '+words+' words to the clipboard'))
+           .catch(()=>{ downloadBlob(new Blob([full],{type:'text/plain'}),'galactic-affairs-'+issueLabel()+'.txt'); toast('Saved as a text file'); });
+    }
+
+    // Drafts as files: the same data the autosave keeps, handed to you so a page can change hands.
+    function downloadDraft(){
+      const doc=captureDoc(); doc.app='galactic-affairs-blank'; doc.saved=new Date().toISOString();
+      downloadBlob(new Blob([JSON.stringify(doc)],{type:'application/json'}),'galactic-affairs-draft-'+fileStamp()+'.json');
+      toast('Draft saved as a file');
+    }
+    function loadDraftFile(file){
+      if(!file) return;
+      const r=new FileReader();
+      r.onload=()=>{
+        let doc=null; try{ doc=JSON.parse(r.result); }catch(e){}
+        if(!doc || !(Array.isArray(doc.pages) || Array.isArray(doc.fields))){ toast("That isn't a Galactic Affairs draft"); return; }
+        if(!confirm('Load this draft? It replaces every page currently open. Saved bulletins are kept.')) return;
+        if(restoreDoc(doc)){ storeSet(DRAFT_KEY,captureDoc()); toast('Draft loaded, '+pages.length+(pages.length===1?' page':' pages')); }
+        else toast("Couldn't read that draft");
+      };
+      r.onerror=()=>toast("Couldn't read that file");
+      r.readAsText(file);
+    }
+
+    exportPngBtn.onclick=exportPng;
+    exportTextBtn.onclick=exportText;
+    draftDownBtn.onclick=downloadDraft;
+    draftLoadBtn.onclick=()=>draftInput.click();
+    draftInput.onchange=()=>{ loadDraftFile(draftInput.files[0]); draftInput.value=''; };
   })();
 
   // ambient backdrop
