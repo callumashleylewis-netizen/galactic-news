@@ -217,10 +217,11 @@
   body.guides [contenteditable]:focus{box-shadow:0 0 0 1px var(--cyan);background:rgba(74,216,255,.06);}
 
   @media print{.toolbar{display:none;}}
+  /* narrow-screen layout for editing only: an export must always be the full two-column page */
   @media (max-width:640px){
-    .frame-inner{padding:22px 18px 20px 40px;}
-    .masthead{font-size:34px;}
-    .cols{grid-template-columns:1fr;gap:18px;}
+    body:not(.exporting) .frame-inner{padding:22px 18px 20px 40px;}
+    body:not(.exporting) .masthead{font-size:34px;}
+    body:not(.exporting) .cols{grid-template-columns:1fr;gap:18px;}
   }
 
   /* ---- ambient deep-space backdrop ---- */
@@ -261,6 +262,12 @@
     mix-blend-mode:screen;transform:translateX(-130%);animation:mastheadSweep 1.6s ease-in-out .4s 1 both;}
   @keyframes mastheadSweep{from{transform:translateX(-130%);}to{transform:translateX(260%);}}
   @media (prefers-reduced-motion:reduce){.comet{display:none!important;}.masthead::after{animation:none!important;}}
+  /* while Export PNG renders: no sweep, no caret, rail text redrawn by hand, and the page pinned
+     to its true 900 px layout at the top-left so a narrow viewport cannot squash the frame */
+  body.exporting .masthead::after{display:none;}
+  body.exporting [contenteditable]{caret-color:transparent;}
+  body.exporting .rail .glyphs{visibility:hidden;}
+  body.exporting .frame{position:absolute;left:0;top:0;width:900px;max-width:none;margin:0;}
 </style>
 </head>
 <body class="guides">
@@ -287,10 +294,11 @@
 
 
   <div class="toolbar">
-    <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. Use <b>&minus; / +</b> to scale up for a sharper image. When you're ready, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
+    <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. When you're ready, click <b>Export PNG</b> to save the bulletin as an image at a fixed 1200 px width, so every issue comes out the same size. Or use <b>&minus; / +</b> to scale up, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
     <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
     <button id="saveBtn" type="button">Save</button>
     <button id="savesBtn" type="button">Saves</button>
+    <button id="exportPngBtn" type="button" title="Save the bulletin as an image, always 1200 px wide">Export PNG</button>
     <button id="hideBtn">Clean view</button>
   </div>
   <button id="showBtn" class="reopen" type="button">&#9998; Edit</button>
@@ -508,6 +516,138 @@
 
   // restore last draft
   (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
+
+  // ---- Export PNG (same approach as the blank canvas) ----
+  (function(){
+    const btn=document.getElementById('exportPngBtn'); if(!btn) return;
+    const EXPORT_WIDTH=1200, PAGE_WIDTH=900;
+
+    function fileStamp(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+    function issueLabel(){
+      const f=editableEls();                                   // 0 story by, 1 issue, 2 week
+      const raw=((f[1]&&f[1].textContent)||'').replace(/[^0-9A-Za-z]+/g,'');
+      return (raw && raw!=='000') ? 'issue-'+raw : fileStamp();
+    }
+    function downloadBlob(blob,name){
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    }
+
+    // fetched the first time it is needed, so the page still opens offline
+    let h2cPromise=null;
+    function loadHtml2canvas(){
+      if(window.html2canvas) return Promise.resolve(window.html2canvas);
+      if(h2cPromise) return h2cPromise;
+      h2cPromise=new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=()=>window.html2canvas?res(window.html2canvas):rej(new Error('html2canvas missing'));
+        s.onerror=()=>{ h2cPromise=null; rej(new Error('load failed')); };
+        document.head.appendChild(s);
+      });
+      return h2cPromise;
+    }
+
+    // The corners are chamfered with clip-path, which the renderer ignores: trim them off the
+    // bitmap, redraw the cyan edge along the cut, and fill the page ground in behind.
+    function chamfer(cv,k){
+      const ctx=cv.getContext('2d'), c=24*k, W=cv.width, H=cv.height;
+      ctx.setTransform(1,0,0,1,0,0);
+      const path=()=>{ ctx.beginPath(); ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c);
+        ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath(); };
+      const trim=()=>{ ctx.save(); ctx.globalCompositeOperation='destination-in'; path(); ctx.fillStyle='#000'; ctx.fill(); ctx.restore(); };
+      trim();
+      // The cyan edge is the frame's own 2.5 px border between the outer and inner chamfers,
+      // painted exactly (outer minus inner, evenodd) so the corners match a screenshot.
+      const p=2.5*k;
+      ctx.save(); ctx.beginPath();
+      ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c); ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath();
+      ctx.moveTo(p+c,p); ctx.lineTo(W-p-c,p); ctx.lineTo(W-p,p+c); ctx.lineTo(W-p,H-p-c); ctx.lineTo(W-p-c,H-p); ctx.lineTo(p+c,H-p); ctx.lineTo(p,H-p-c); ctx.lineTo(p,p+c); ctx.closePath();
+      ctx.fillStyle='#4ad8ff'; ctx.fill('evenodd'); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#03101d'; ctx.fillRect(0,0,W,H); ctx.restore();
+    }
+    // The renderer cannot draw vertical text, so the rail's "GALACTIC AFFAIRS" is put back by hand.
+    function drawRail(cv,k){
+      const rail=document.querySelector('.rail'); if(!rail) return;
+      const fr=frameEl.getBoundingClientRect(), r=rail.getBoundingClientRect();
+      const cx=(r.left-fr.left+r.width/2)*k, cy=(r.top-fr.top+r.height/2)*k;
+      const ctx=cv.getContext('2d'); ctx.setTransform(1,0,0,1,0,0);
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/2);
+      ctx.font='500 '+(11*k)+'px "Chakra Petch", sans-serif';
+      if('letterSpacing' in ctx) ctx.letterSpacing=(5.5*k)+'px';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(74,216,255,.55)'; ctx.shadowColor='rgba(74,216,255,.5)'; ctx.shadowBlur=6*k;
+      ctx.fillText('GALACTIC AFFAIRS',0,0);
+      ctx.restore();
+    }
+    function contentReach(cv){
+      const w=200, h=Math.max(1,Math.round(cv.height*w/cv.width));
+      const t=document.createElement('canvas'); t.width=w; t.height=h;
+      const c=t.getContext('2d'); c.drawImage(cv,0,0,w,h);
+      const d=c.getImageData(0,0,w,h).data; let mx=0;
+      for(let y=0;y<h;y+=2){ for(let x=w-1;x>mx;x--){ if(d[(y*w+x)*4+3]>10){ mx=x; break; } } }
+      return (mx+1)/w;
+    }
+    function renderFrame(h2c,scale,alt){
+      const H=frameEl.offsetHeight;
+      const opts={backgroundColor:null, scale:scale, useCORS:true, logging:false,
+        x:0, y:0, width:PAGE_WIDTH, height:H, scrollX:0, scrollY:0,
+        windowWidth:Math.max(document.documentElement.clientWidth, PAGE_WIDTH+100),
+        windowHeight:Math.max(document.documentElement.clientHeight, H+100)};
+      if(alt) opts.scale=1;
+      return h2c(frameEl,opts);
+    }
+    // Always a fresh canvas: the renderer leaves its own scale on the context it hands back.
+    function normalise(cv){
+      const out=document.createElement('canvas');
+      out.width=EXPORT_WIDTH; out.height=Math.max(1,Math.round(cv.height*EXPORT_WIDTH/cv.width));
+      const ctx=out.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      ctx.drawImage(cv,0,0,out.width,out.height);
+      return out;
+    }
+
+    async function exportPng(){
+      btn.disabled=true;
+      const hadGuides=document.body.classList.contains('guides');
+      const sx=window.scrollX, sy=window.scrollY;
+      try{
+        toast('Rendering…');
+        const h2c=await loadHtml2canvas();
+        if(document.fonts && document.fonts.ready) await document.fonts.ready;
+        if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        document.body.classList.remove('guides');
+        document.body.classList.add('exporting');
+        frameEl.style.zoom=1;
+        window.scrollTo(0,0);
+        await new Promise(r=>setTimeout(r,80));
+        const k=EXPORT_WIDTH/PAGE_WIDTH;
+        let cv=await renderFrame(h2c,k,false);
+        if(contentReach(cv)<0.95){
+          cv=await renderFrame(h2c,k,true);
+          if(contentReach(cv)<0.95) throw new Error('cropped');
+        }
+        cv=normalise(cv);
+        drawRail(cv,k);
+        chamfer(cv,k);
+        const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+        if(!blob) throw new Error('no image');
+        downloadBlob(blob,'galactic-affairs-bulletin-'+issueLabel()+'.png');
+        toast('Exported '+cv.width+' × '+cv.height+' px');
+      }catch(e){
+        if(navigator.onLine===false) toast('Export needs an internet connection');
+        else if(e && e.message==='cropped') toast('The export came out cut off in this browser, so it was not saved. Use Clean view and snip instead.');
+        else toast('Export failed, use Clean view and snip instead');
+      }finally{
+        document.body.classList.remove('exporting');
+        if(hadGuides) document.body.classList.add('guides');
+        applyZoom();
+        window.scrollTo(sx,sy);
+        btn.disabled=false;
+      }
+    }
+    btn.onclick=exportPng;
+  })();
 
   // ambient backdrop
   (function(){

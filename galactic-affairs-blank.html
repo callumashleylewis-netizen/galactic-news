@@ -100,6 +100,10 @@
     font-size:13px;letter-spacing:.04em;padding:10px 18px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.5);
     opacity:0;pointer-events:none;transition:opacity .2s;}
   .toast.show{opacity:1;}
+  .toast.action{pointer-events:auto;}
+  .toast button{margin-left:12px;font-family:'Chakra Petch',sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    background:rgba(74,216,255,.16);color:var(--cyan-bright);border:1px solid var(--cyan-dim);border-radius:6px;padding:4px 10px;cursor:pointer;}
+  .toast button:hover{background:rgba(74,216,255,.3);}
 
   .frame{
     width:900px;max-width:100%;background:var(--cyan);
@@ -407,6 +411,20 @@
     else emptyHint.style.display='';
   }
 
+  // The delete cross sits on the drag bar, one slip away, so a deleted box can be put back
+  // for a few seconds. Switching page drops the offer, since the box belongs to the old one.
+  let lastDeleted=null;
+  function deleteEl(el){
+    lastDeleted={el:el, next:el.nextSibling};
+    el.remove(); hideHintIfNeeded();
+    toastAction('Box deleted','Undo',()=>{
+      if(!lastDeleted) return;
+      const box=lastDeleted.el, next=lastDeleted.next; lastDeleted=null;
+      if(next && next.parentNode===canvas) canvas.insertBefore(box,next); else canvas.appendChild(box);
+      box.style.zIndex=(++topZ); hideHintIfNeeded(); toast('Box restored');
+    });
+  }
+
   function clampToCanvas(el){
     const cw=canvas.clientWidth, ch=canvas.clientHeight;
     let l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
@@ -423,7 +441,7 @@
     const bar=document.createElement('div'); bar.className='el-bar';
     const grip=document.createElement('span'); grip.textContent='\u283f drag';
     const del=document.createElement('button'); del.type='button'; del.className='del'; del.textContent='\u00d7';
-    del.addEventListener('click',(e)=>{e.stopPropagation(); el.remove(); hideHintIfNeeded();});
+    del.addEventListener('click',(e)=>{e.stopPropagation(); deleteEl(el);});
     bar.appendChild(grip); bar.appendChild(del); el.appendChild(bar);
 
     bar.addEventListener('pointerdown',(e)=>{
@@ -630,6 +648,7 @@
     if(state.fields.length===fEls.length){ fEls.forEach((el,i)=>el.innerHTML=state.fields[i]); }
     canvas.style.height=state.canvasH||'';
     canvas.querySelectorAll('.el').forEach(el=>el.remove());
+    lastDeleted=null;
     state.els.forEach(recreateEl);
     hideHintIfNeeded();
     return true;
@@ -688,10 +707,18 @@
   };
 
   let toastTimer=null;
-  function toast(msg){
+  function toast(msg,ms){
     const t=document.getElementById('toast');
-    t.textContent=msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+    t.textContent=msg; t.classList.remove('action'); t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show','action'),ms||2600);
+  }
+  // A toast carrying one button, used for Undo.
+  function toastAction(msg,label,fn){
+    toast(msg,7000);
+    const t=document.getElementById('toast'); t.classList.add('action');
+    const b=document.createElement('button'); b.type='button'; b.textContent=label;
+    b.onclick=(e)=>{ e.stopPropagation(); fn(); };
+    t.appendChild(b);
   }
 
   function dateLabel(d){
@@ -822,8 +849,14 @@
         ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath(); };
       const trim=()=>{ ctx.save(); ctx.globalCompositeOperation='destination-in'; path(); ctx.fillStyle='#000'; ctx.fill(); ctx.restore(); };
       trim();
-      ctx.save(); path(); ctx.lineWidth=5*k; ctx.strokeStyle='#4ad8ff'; ctx.stroke(); ctx.restore();
-      trim();
+      // The cyan edge is the frame's own 2.5 px border showing between the outer chamfer and the
+      // inner panel's chamfer, so paint exactly that band (outer minus inner, evenodd). It covers
+      // the corner brackets the same way the live page's clip-path does, so corners match a screenshot.
+      const p=2.5*k;
+      ctx.save(); ctx.beginPath();
+      ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c); ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath();
+      ctx.moveTo(p+c,p); ctx.lineTo(W-p-c,p); ctx.lineTo(W-p,p+c); ctx.lineTo(W-p,H-p-c); ctx.lineTo(W-p-c,H-p); ctx.lineTo(p+c,H-p); ctx.lineTo(p,H-p-c); ctx.lineTo(p,p+c); ctx.closePath();
+      ctx.fillStyle='#4ad8ff'; ctx.fill('evenodd'); ctx.restore();
       // Behind the cut corners, the deep-space ground the page sits on, as a screenshot would
       // show. Left transparent they read as a missing chunk on a white viewer or Discord grey.
       ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#03101d'; ctx.fillRect(0,0,W,H); ctx.restore();
