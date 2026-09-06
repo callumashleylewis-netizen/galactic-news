@@ -244,6 +244,11 @@
   /* while Export PNG renders: no sweep, no caret, nothing that could land in the image */
   body.exporting .masthead::after{display:none;}
   body.exporting [contenteditable]{caret-color:transparent;}
+  body.exporting .rail .glyphs{visibility:hidden;}   /* redrawn by hand on the export, see drawRail */
+  /* Pin the page to its true 900 px layout at the top-left for the moment of export. Otherwise
+     max-width:100% lets a narrow viewport (small window, browser zoom, display scaling) squash
+     the frame while the boxes stay put, and the export comes out as a thin strip of the page. */
+  body.exporting .frame{position:absolute;left:0;top:0;width:900px;max-width:none;margin:0;}
 </style>
 </head>
 <body>
@@ -303,7 +308,7 @@
     <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
     <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image at a fixed 1200 px width, so every issue comes out the same size. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
-    <input id="draftInput" type="file" accept="application/json,.json" hidden>
+    <input id="draftInput" type="file" accept=".gadraft,.json" hidden>
   </div>
   <button id="reopenBtn" class="reopen" type="button">&#9998; Edit</button>
 
@@ -810,14 +815,64 @@
 
     // The page corners are chamfered with clip-path, which the renderer does not honour,
     // so trim them off the finished bitmap and redraw the cyan edge along the cut.
-    function chamfer(cv,scale){
-      const ctx=cv.getContext('2d'), c=24*scale, W=cv.width, H=cv.height;
+    function chamfer(cv,k){
+      const ctx=cv.getContext('2d'), c=24*k, W=cv.width, H=cv.height;
       const path=()=>{ ctx.beginPath(); ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c);
         ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath(); };
       const trim=()=>{ ctx.save(); ctx.globalCompositeOperation='destination-in'; path(); ctx.fillStyle='#000'; ctx.fill(); ctx.restore(); };
       trim();
-      ctx.save(); path(); ctx.lineWidth=5*scale; ctx.strokeStyle='#4ad8ff'; ctx.stroke(); ctx.restore();
+      ctx.save(); path(); ctx.lineWidth=5*k; ctx.strokeStyle='#4ad8ff'; ctx.stroke(); ctx.restore();
       trim();
+    }
+
+    // The renderer cannot draw vertical text, so the side rail's "GALACTIC AFFAIRS" is
+    // hidden while rendering and put back here by hand, at the same spot and size.
+    function drawRail(cv,k){
+      const rail=document.querySelector('.rail'); if(!rail) return;
+      const fr=frameEl.getBoundingClientRect(), r=rail.getBoundingClientRect();
+      const cx=(r.left-fr.left+r.width/2)*k, cy=(r.top-fr.top+r.height/2)*k;
+      const ctx=cv.getContext('2d');
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/2);
+      ctx.font='500 '+(11*k)+'px "Chakra Petch", sans-serif';
+      if('letterSpacing' in ctx) ctx.letterSpacing=(5.5*k)+'px';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(74,216,255,.55)'; ctx.shadowColor='rgba(74,216,255,.5)'; ctx.shadowBlur=6*k;
+      ctx.fillText('GALACTIC AFFAIRS',0,0);
+      ctx.restore();
+    }
+
+    // How far right the drawn content reaches, 0 to 1. A render that came back cut off
+    // (seen on one machine: only the left sixth of the page) fails this and is retried.
+    function contentReach(cv){
+      const w=200, h=Math.max(1,Math.round(cv.height*w/cv.width));
+      const t=document.createElement('canvas'); t.width=w; t.height=h;
+      const c=t.getContext('2d'); c.drawImage(cv,0,0,w,h);
+      const d=c.getImageData(0,0,w,h).data; let mx=0;
+      for(let y=0;y<h;y+=2){ for(let x=w-1;x>mx;x--){ if(d[(y*w+x)*4+3]>10){ mx=x; break; } } }
+      return (mx+1)/w;
+    }
+
+    // With body.exporting on, the frame sits at (0,0) at exactly 900 px (see the CSS), so
+    // every size can be stated outright and the render no longer depends on the viewport.
+    const PAGE_WIDTH=900;
+    function renderFrame(h2c,scale,alt){
+      const H=frameEl.offsetHeight;
+      const opts={backgroundColor:null, scale:scale, useCORS:true, logging:false,
+        x:0, y:0, width:PAGE_WIDTH, height:H, scrollX:0, scrollY:0,
+        windowWidth:Math.max(document.documentElement.clientWidth, PAGE_WIDTH+100),
+        windowHeight:Math.max(document.documentElement.clientHeight, H+100)};
+      if(alt) opts.scale=1;
+      return h2c(frameEl,opts);
+    }
+
+    // Whatever pixel size the renderer produced, the file is always EXPORT_WIDTH wide.
+    function normalise(cv){
+      if(cv.width===EXPORT_WIDTH) return cv;
+      const out=document.createElement('canvas');
+      out.width=EXPORT_WIDTH; out.height=Math.max(1,Math.round(cv.height*EXPORT_WIDTH/cv.width));
+      const ctx=out.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      ctx.drawImage(cv,0,0,out.width,out.height);
+      return out;
     }
 
     async function exportPng(){
@@ -833,17 +888,25 @@
         document.body.classList.add('clean','exporting');
         frameEl.style.zoom=1;
         window.scrollTo(0,0);
-        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-        const scale=EXPORT_WIDTH/frameEl.offsetWidth;
-        const cv=await h2c(frameEl,{backgroundColor:null,scale:scale,useCORS:true,logging:false});
-        chamfer(cv,scale);
+        await new Promise(r=>setTimeout(r,80));
+        const k=EXPORT_WIDTH/PAGE_WIDTH;              // page px to output px
+        let cv=await renderFrame(h2c,k,false);
+        if(contentReach(cv)<0.95){
+          cv=await renderFrame(h2c,k,true);
+          if(contentReach(cv)<0.95) throw new Error('cropped');
+        }
+        cv=normalise(cv);
+        drawRail(cv,k);
+        chamfer(cv,k);
         const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
         if(!blob) throw new Error('no image');
         const name='galactic-affairs-'+issueLabel()+(pages.length>1?'-page-'+(current+1):'')+'.png';
         downloadBlob(blob,name);
         toast('Exported '+cv.width+' × '+cv.height+' px');
       }catch(e){
-        toast(navigator.onLine===false ? 'Export needs an internet connection' : 'Export failed, use Clean view and snip instead');
+        if(navigator.onLine===false) toast('Export needs an internet connection');
+        else if(e && e.message==='cropped') toast('The export came out cut off in this browser, so it was not saved. Use Clean view and snip instead.');
+        else toast('Export failed, use Clean view and snip instead');
       }finally{
         document.body.classList.remove('exporting');
         if(!wasClean) document.body.classList.remove('clean');
@@ -881,7 +944,8 @@
     // Drafts as files: the same data the autosave keeps, handed to you so a page can change hands.
     function downloadDraft(){
       const doc=captureDoc(); doc.app='galactic-affairs-blank'; doc.saved=new Date().toISOString();
-      downloadBlob(new Blob([JSON.stringify(doc)],{type:'application/json'}),'galactic-affairs-draft-'+fileStamp()+'.json');
+      // .gadraft rather than .json, so Windows shows it as a Galactic Affairs file and not whatever app owns .json
+      downloadBlob(new Blob([JSON.stringify(doc)],{type:'application/octet-stream'}),'galactic-affairs-draft-'+fileStamp()+'.gadraft');
       toast('Draft saved as a file');
     }
     function loadDraftFile(file){
