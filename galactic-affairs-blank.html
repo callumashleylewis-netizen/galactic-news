@@ -817,12 +817,16 @@
     // so trim them off the finished bitmap and redraw the cyan edge along the cut.
     function chamfer(cv,k){
       const ctx=cv.getContext('2d'), c=24*k, W=cv.width, H=cv.height;
+      ctx.setTransform(1,0,0,1,0,0);
       const path=()=>{ ctx.beginPath(); ctx.moveTo(c,0); ctx.lineTo(W-c,0); ctx.lineTo(W,c); ctx.lineTo(W,H-c);
         ctx.lineTo(W-c,H); ctx.lineTo(c,H); ctx.lineTo(0,H-c); ctx.lineTo(0,c); ctx.closePath(); };
       const trim=()=>{ ctx.save(); ctx.globalCompositeOperation='destination-in'; path(); ctx.fillStyle='#000'; ctx.fill(); ctx.restore(); };
       trim();
       ctx.save(); path(); ctx.lineWidth=5*k; ctx.strokeStyle='#4ad8ff'; ctx.stroke(); ctx.restore();
       trim();
+      // Behind the cut corners, the deep-space ground the page sits on, as a screenshot would
+      // show. Left transparent they read as a missing chunk on a white viewer or Discord grey.
+      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#03101d'; ctx.fillRect(0,0,W,H); ctx.restore();
     }
 
     // The renderer cannot draw vertical text, so the side rail's "GALACTIC AFFAIRS" is
@@ -832,6 +836,7 @@
       const fr=frameEl.getBoundingClientRect(), r=rail.getBoundingClientRect();
       const cx=(r.left-fr.left+r.width/2)*k, cy=(r.top-fr.top+r.height/2)*k;
       const ctx=cv.getContext('2d');
+      ctx.setTransform(1,0,0,1,0,0);
       ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/2);
       ctx.font='500 '+(11*k)+'px "Chakra Petch", sans-serif';
       if('letterSpacing' in ctx) ctx.letterSpacing=(5.5*k)+'px';
@@ -866,8 +871,9 @@
     }
 
     // Whatever pixel size the renderer produced, the file is always EXPORT_WIDTH wide.
+    // Always a fresh canvas, even when the size already matches: the renderer leaves its
+    // own scale transform on the context it hands back, which threw off the corner cuts.
     function normalise(cv){
-      if(cv.width===EXPORT_WIDTH) return cv;
       const out=document.createElement('canvas');
       out.width=EXPORT_WIDTH; out.height=Math.max(1,Math.round(cv.height*EXPORT_WIDTH/cv.width));
       const ctx=out.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
