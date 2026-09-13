@@ -28,7 +28,7 @@
   }
 
   .toolbar{
-    width:900px;max-width:100%;background:rgba(10,31,51,.7);
+    width:var(--page-w,900px);max-width:100%;background:rgba(10,31,51,.7);
     border:1px solid var(--line);border-radius:10px;padding:10px 14px;
     font-family:'Chakra Petch',sans-serif;font-size:13px;color:var(--text-dim);
     display:flex;align-items:center;gap:8px 0;flex-wrap:wrap;
@@ -62,6 +62,10 @@
   .toolbar .pagectl #pageReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:42px;text-align:center;color:var(--text);}
   .toolbar button:disabled{opacity:.4;cursor:default;}
   .toolbar .pagectl button:disabled:hover{background:none;}
+  .toolbar .widthctl{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--cyan-dim);border-radius:7px;padding:2px 10px;}
+  .toolbar .widthctl .tb-label{margin:0;}
+  .toolbar .widthctl input[type=range]{width:110px;accent-color:var(--cyan);cursor:pointer;margin:0;}
+  .toolbar .widthctl #widthReadout{font-family:'Chakra Petch',sans-serif;font-size:12px;min-width:52px;text-align:center;color:var(--text);}
   body.clean .toolbar{display:none;}
   body.clean .reopen{display:block;}
   .reopen{position:fixed;top:12px;left:12px;z-index:50;display:none;
@@ -106,7 +110,7 @@
   .toast button:hover{background:rgba(74,216,255,.3);}
 
   .frame{
-    width:900px;max-width:100%;background:var(--cyan);
+    width:var(--page-w,900px);max-width:100%;background:var(--cyan);
     clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
     padding:2.5px;filter:drop-shadow(0 0 14px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
   }
@@ -249,10 +253,10 @@
   body.exporting .masthead::after{display:none;}
   body.exporting [contenteditable]{caret-color:transparent;}
   body.exporting .rail .glyphs{visibility:hidden;}   /* redrawn by hand on the export, see drawRail */
-  /* Pin the page to its true 900 px layout at the top-left for the moment of export. Otherwise
+  /* Pin the page to its true layout width at the top-left for the moment of export. Otherwise
      max-width:100% lets a narrow viewport (small window, browser zoom, display scaling) squash
      the frame while the boxes stay put, and the export comes out as a thin strip of the page. */
-  body.exporting .frame{position:absolute;left:0;top:0;width:900px;max-width:none;margin:0;}
+  body.exporting .frame{position:absolute;left:0;top:0;width:var(--page-w,900px);max-width:none;margin:0;}
 </style>
 </head>
 <body>
@@ -295,6 +299,7 @@
     <div class="tb-group">
       <span class="tb-label">View</span>
       <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
+      <span class="widthctl" title="Page width for every page of this issue, 900 to 1400 px"><span class="tb-label">Width</span><input id="widthRange" type="range" min="900" max="1400" step="50" value="900" aria-label="Page width"><span id="widthReadout">900 px</span></span>
     </div>
     <div class="tb-group">
       <span class="tb-label">Work</span>
@@ -305,12 +310,12 @@
     </div>
     <div class="tb-group">
       <span class="tb-label">Export</span>
-      <button id="exportPngBtn" type="button" title="Save this page as an image, always 1200 px wide">Export PNG</button>
+      <button id="exportPngBtn" type="button" title="Save this page as an image, 1200 px wide for a standard page, wider pages scale to match">Export PNG</button>
       <button id="exportTextBtn" type="button" title="Copy every box's text in reading order, for the Trello card">Export text</button>
     </div>
     <button id="helpBtn" type="button" title="How this works">?</button>
     <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image at a fixed 1200 px width, so every issue comes out the same size. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room, and use the <b>Width</b> slider to make every page of the issue wider, up to 1400 px, when the text needs more room across. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image, 1200 px wide for a standard page and scaled up in step for a wider one, so text comes out the same size on every issue. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
     <input id="draftInput" type="file" accept=".gadraft,.json" hidden>
   </div>
@@ -558,6 +563,19 @@
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
 
+  // page width: one setting for the whole issue, from the original 900 px up to 1400 px.
+  // The frame, the toolbar and the export all read it from --page-w on the body.
+  const WIDTH_MIN=900, WIDTH_MAX=1400;
+  let pageW=WIDTH_MIN;
+  const widthRange=document.getElementById('widthRange'), widthReadout=document.getElementById('widthReadout');
+  function applyWidth(w){
+    pageW=Math.max(WIDTH_MIN,Math.min(WIDTH_MAX,Math.round((parseInt(w,10)||WIDTH_MIN)/50)*50));
+    document.body.style.setProperty('--page-w',pageW+'px');
+    widthRange.value=pageW; widthReadout.textContent=pageW+' px';
+  }
+  widthRange.oninput=()=>applyWidth(widthRange.value);
+  widthRange.onchange=()=>{ applyWidth(widthRange.value); scheduleDraft(); };
+
   // saving: IndexedDB (room for hundreds of MB) with a localStorage fallback
   const SAVES_KEY='galactic-affairs-blank-saves';
   const DRAFT_KEY='galactic-affairs-blank-draft';
@@ -661,7 +679,7 @@
   function blankPage(){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
   let pages=[blankPage()], current=0;
   function syncCurrent(){ pages[current]=captureState(); }
-  function captureDoc(){ syncCurrent(); return { v:2, current, pages }; }
+  function captureDoc(){ syncCurrent(); return { v:2, current, pages, w:pageW }; }
   function restoreDoc(doc){
     let list;
     if(doc && Array.isArray(doc.pages)) list=doc.pages;
@@ -670,6 +688,7 @@
     pages=list.map(s=>(s && Array.isArray(s.fields)) ? s : blankPage());
     if(!pages.length) pages=[blankPage()];
     current=Math.min(Math.max(0,(doc && doc.current)|0), pages.length-1);
+    applyWidth(doc.w||WIDTH_MIN);      // saves and drafts from before the slider have no width, so 900
     restoreState(pages[current]);
     updatePageUI();
     return true;
@@ -780,7 +799,7 @@
   });
   document.getElementById('freshBtn').onclick=()=>{
     if(!confirm('Start a fresh bulletin? All pages and current unsaved work will be cleared. Saved bulletins are kept.')) return;
-    pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); storeSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
+    pages=[blankPage()]; current=0; applyWidth(WIDTH_MIN); restoreState(pages[0]); updatePageUI(); storeSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
   };
 
   // auto-draft
@@ -804,7 +823,7 @@
     const draftDownBtn=document.getElementById('draftDownBtn');
     const draftLoadBtn=document.getElementById('draftLoadBtn');
     const draftInput=document.getElementById('draftInput');
-    const EXPORT_WIDTH=1200;   // every issue the same width, whatever screen it was made on
+    const EXPORT_WIDTH=1200;   // output width for a standard 900 px page; wider pages scale up in step, so text stays the same size
 
     function fileStamp(){
       const d=new Date(), p=n=>String(n).padStart(2,'0');
@@ -890,25 +909,24 @@
       return (mx+1)/w;
     }
 
-    // With body.exporting on, the frame sits at (0,0) at exactly 900 px (see the CSS), so
-    // every size can be stated outright and the render no longer depends on the viewport.
-    const PAGE_WIDTH=900;
+    // With body.exporting on, the frame sits at (0,0) at exactly the page width (see the CSS),
+    // so every size can be stated outright and the render no longer depends on the viewport.
     function renderFrame(h2c,scale,alt){
       const H=frameEl.offsetHeight;
       const opts={backgroundColor:null, scale:scale, useCORS:true, logging:false,
-        x:0, y:0, width:PAGE_WIDTH, height:H, scrollX:0, scrollY:0,
-        windowWidth:Math.max(document.documentElement.clientWidth, PAGE_WIDTH+100),
+        x:0, y:0, width:pageW, height:H, scrollX:0, scrollY:0,
+        windowWidth:Math.max(document.documentElement.clientWidth, pageW+100),
         windowHeight:Math.max(document.documentElement.clientHeight, H+100)};
       if(alt) opts.scale=1;
       return h2c(frameEl,opts);
     }
 
-    // Whatever pixel size the renderer produced, the file is always EXPORT_WIDTH wide.
+    // Whatever pixel size the renderer produced, the file is always targetW wide.
     // Always a fresh canvas, even when the size already matches: the renderer leaves its
     // own scale transform on the context it hands back, which threw off the corner cuts.
-    function normalise(cv){
+    function normalise(cv,targetW){
       const out=document.createElement('canvas');
-      out.width=EXPORT_WIDTH; out.height=Math.max(1,Math.round(cv.height*EXPORT_WIDTH/cv.width));
+      out.width=targetW; out.height=Math.max(1,Math.round(cv.height*targetW/cv.width));
       const ctx=out.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
       ctx.drawImage(cv,0,0,out.width,out.height);
       return out;
@@ -928,13 +946,13 @@
         frameEl.style.zoom=1;
         window.scrollTo(0,0);
         await new Promise(r=>setTimeout(r,80));
-        const k=EXPORT_WIDTH/PAGE_WIDTH;              // page px to output px
+        const k=EXPORT_WIDTH/WIDTH_MIN;               // page px to output px, the same for every width
         let cv=await renderFrame(h2c,k,false);
         if(contentReach(cv)<0.95){
           cv=await renderFrame(h2c,k,true);
           if(contentReach(cv)<0.95) throw new Error('cropped');
         }
-        cv=normalise(cv);
+        cv=normalise(cv,Math.round(pageW*k));
         drawRail(cv,k);
         chamfer(cv,k);
         const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
