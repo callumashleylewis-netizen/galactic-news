@@ -308,7 +308,7 @@
     <div class="tb-group">
       <span class="tb-label">View</span>
       <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
-      <span class="widthctl" title="Page width for every page of this issue. Drag the grip on the right edge of the page to change it, double-click the grip to go back to 900"><span class="tb-label">Width</span><span id="widthReadout">900 px</span></span>
+      <span class="widthctl" title="Width of this page. Drag the grip on the right edge of the page to change it, double-click the grip to go back to 900"><span class="tb-label">Width</span><span id="widthReadout">900 px</span></span>
     </div>
     <div class="tb-group">
       <span class="tb-label">Work</span>
@@ -324,7 +324,7 @@
     </div>
     <button id="helpBtn" type="button" title="How this works">?</button>
     <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room, and drag the <b>grip on the right edge</b> to make every page of the issue wider, up to 1400 px, when the text needs more room across (double-click it to go back to the standard 900). Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image, 1200 px wide for a standard page and scaled up in step for a wider one, so text comes out the same size on every issue. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room, and drag the <b>grip on the right edge</b> to make the page wider, up to 1400 px, when the text needs more room across (double-click it to go back to the standard 900). Width and height are set per page, and a new page starts at the width of the one you were on. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image, 1200 px wide for a standard page and scaled up in step for a wider one, so text comes out the same size on every issue. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
     <input id="draftInput" type="file" accept=".gadraft,.json" hidden>
   </div>
@@ -572,8 +572,9 @@
   document.getElementById('zoomIn').onclick=()=>{ zoomScale=Math.min(3, Math.round((zoomScale+0.25)*100)/100); applyZoom(); };
   document.getElementById('zoomOut').onclick=()=>{ zoomScale=Math.max(0.5, Math.round((zoomScale-0.25)*100)/100); applyZoom(); };
 
-  // page width: one setting for the whole issue, from the original 900 px up to 1400 px.
-  // The frame, the toolbar and the export all read it from --page-w on the body.
+  // page width: per page, like the height, from the original 900 px up to 1400 px. pageW is the
+  // current page's; captureState/restoreState carry it. The frame, the toolbar and the export
+  // all read it from --page-w on the body.
   const WIDTH_MIN=900, WIDTH_MAX=1400;
   let pageW=WIDTH_MIN;
   const widthReadout=document.getElementById('widthReadout');
@@ -672,7 +673,7 @@
       else { rec.kind=box.classList.contains('title')?'title':(box.classList.contains('sub')?'sub':'body'); rec.html=box?box.innerHTML:''; rec.fs=(box&&box.style.fontSize)||''; }
       return rec;
     });
-    return { fields, els, canvasH: canvas.style.height||'' };
+    return { fields, els, canvasH: canvas.style.height||'', w: pageW };
   }
   function recreateEl(rec){
     const el=makeEl();
@@ -700,6 +701,7 @@
     const fEls=fixedFieldEls();
     if(state.fields.length===fEls.length){ fEls.forEach((el,i)=>el.innerHTML=state.fields[i]); }
     canvas.style.height=state.canvasH||'';
+    applyWidth(state.w||WIDTH_MIN);          // width is per page, like the height
     canvas.querySelectorAll('.el').forEach(el=>el.remove());
     lastDeleted=null;
     state.els.forEach(recreateEl);
@@ -714,7 +716,7 @@
   function blankPage(){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
   let pages=[blankPage()], current=0;
   function syncCurrent(){ pages[current]=captureState(); }
-  function captureDoc(){ syncCurrent(); return { v:2, current, pages, w:pageW }; }
+  function captureDoc(){ syncCurrent(); return { v:2, current, pages }; }
   function restoreDoc(doc){
     let list;
     if(doc && Array.isArray(doc.pages)) list=doc.pages;
@@ -722,8 +724,10 @@
     else return false;
     pages=list.map(s=>(s && Array.isArray(s.fields)) ? s : blankPage());
     if(!pages.length) pages=[blankPage()];
+    // Drafts from the few days the width was one setting per issue carry it at doc level,
+    // so hand it to every page that has none. Older saves have neither and open at 900.
+    pages.forEach(s=>{ if(!s.w) s.w=doc.w||WIDTH_MIN; });
     current=Math.min(Math.max(0,(doc && doc.current)|0), pages.length-1);
-    applyWidth(doc.w||WIDTH_MIN);      // saves and drafts from before the slider have no width, so 900
     restoreState(pages[current]);
     updatePageUI();
     return true;
@@ -749,7 +753,7 @@
   pageNext.onclick=()=>gotoPage(current+1);
   pageAdd.onclick=()=>{
     if(pages.length>=MAX_PAGES){ toast('Maximum of 15 pages'); return; }
-    syncCurrent(); pages.push(blankPage()); current=pages.length-1;
+    syncCurrent(); const np=blankPage(); np.w=pageW; pages.push(np); current=pages.length-1;   // a new page starts at the width you were on
     restoreState(pages[current]); updatePageUI(); scheduleDraft(); toast('Page '+(current+1)+' added');
   };
   pageDel.onclick=()=>{
@@ -834,7 +838,7 @@
   });
   document.getElementById('freshBtn').onclick=()=>{
     if(!confirm('Start a fresh bulletin? All pages and current unsaved work will be cleared. Saved bulletins are kept.')) return;
-    pages=[blankPage()]; current=0; applyWidth(WIDTH_MIN); restoreState(pages[0]); updatePageUI(); storeSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
+    pages=[blankPage()]; current=0; restoreState(pages[0]); updatePageUI(); storeSet(DRAFT_KEY,captureDoc()); closeSaves(); toast('Fresh bulletin');
   };
 
   // auto-draft
