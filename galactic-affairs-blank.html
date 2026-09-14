@@ -156,6 +156,14 @@
   .canvas-handle:hover{background:rgba(74,216,255,.34);}
   .canvas-handle i{width:16px;height:2px;background:var(--cyan-bright);border-radius:1px;opacity:.85;display:block;}
   body.clean .canvas-handle{display:none;}
+  /* width grip: the same idea on the right edge of the page, sat inside the frame's padding so the chamfer clip leaves it alone */
+  .width-handle{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+    width:14px;height:76px;border-radius:7px;background:rgba(74,216,255,.22);
+    border:1px solid var(--cyan-dim);cursor:ew-resize;z-index:99999;
+    display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2px;}
+  .width-handle:hover{background:rgba(74,216,255,.34);}
+  .width-handle i{width:2px;height:16px;background:var(--cyan-bright);border-radius:1px;opacity:.85;display:block;}
+  body.clean .width-handle{display:none;}
   #guides{position:absolute;inset:0;pointer-events:none;z-index:100000;}
   #guides .g{position:absolute;background:#ff3d7f;box-shadow:0 0 4px rgba(255,61,127,.85);}
   #guides .g.v{top:0;bottom:0;width:1px;}
@@ -301,7 +309,7 @@
     <div class="tb-group">
       <span class="tb-label">View</span>
       <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
-      <span class="widthctl" title="Page width for every page of this issue, 900 to 1400 px"><span class="tb-label">Width</span><input id="widthRange" type="range" min="900" max="1400" step="50" value="900" aria-label="Page width"><span id="widthReadout">900 px</span></span>
+      <span class="widthctl" title="Page width for every page of this issue, 900 to 1400 px"><span class="tb-label">Width</span><input id="widthRange" type="range" min="900" max="1400" step="10" value="900" aria-label="Page width"><span id="widthReadout">900 px</span></span>
     </div>
     <div class="tb-group">
       <span class="tb-label">Work</span>
@@ -317,7 +325,7 @@
     </div>
     <button id="helpBtn" type="button" title="How this works">?</button>
     <button id="cleanBtn" class="clean" title="Hide all editing controls for a screenshot">Clean view</button>
-    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room, and use the <b>Width</b> slider to make every page of the issue wider, up to 1400 px, when the text needs more room across. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image, 1200 px wide for a standard page and scaled up in step for a wider one, so text comes out the same size on every issue. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
+    <div class="hint"><b>Design by hand:</b> add text boxes and images, drag them by their top bar, and resize from the bottom-right corner. Use the <b>A&minus; / A+</b> control on a box to change its text size, or type an exact number. Pink guides snap to the edges and centers of other elements and the canvas; hold <b>Alt</b> to move freely. Drag the <b>grip below the page</b> to make the canvas taller when a story needs more room, and drag the <b>grip on the right edge</b>, or use the <b>Width</b> slider, to make every page of the issue wider, up to 1400 px, when the text needs more room across. Use <b>&minus; / +</b> to scale the view for a sharper screenshot. Add an image with the button or by dragging a file onto the canvas. When finished, click <b>Clean view</b>; the toolbar and handles all disappear so they can't end up in your shot. Then snip around the bulletin (Win + Shift + S), or click <b>Export PNG</b> to save the page as an image, 1200 px wide for a standard page and scaled up in step for a wider one, so text comes out the same size on every issue. <b>Export text</b> copies every box in reading order, ready to paste onto the Trello card. <b>Download draft</b> saves all your pages to a file you can send to another Tribune member, and <b>Load draft</b> opens one. The <b>Edit</b> button, top-left, brings everything back.</div>
     <input id="fileInput" type="file" accept="image/*" hidden>
     <input id="draftInput" type="file" accept=".gadraft,.json" hidden>
   </div>
@@ -573,13 +581,36 @@
   // The toolbar only follows the page width once the slider is released. While dragging, a
   // toolbar that reflows under the cursor moves the slider itself, which made it feel broken.
   function applyWidth(w,settled){
-    pageW=Math.max(WIDTH_MIN,Math.min(WIDTH_MAX,Math.round((parseInt(w,10)||WIDTH_MIN)/50)*50));
+    pageW=Math.max(WIDTH_MIN,Math.min(WIDTH_MAX,Math.round((parseInt(w,10)||WIDTH_MIN)/10)*10));
     document.body.style.setProperty('--page-w',pageW+'px');
     if(settled!==false) document.body.style.setProperty('--toolbar-w',pageW+'px');
     widthRange.value=pageW; widthReadout.textContent=pageW+' px';
   }
   widthRange.oninput=()=>applyWidth(widthRange.value,false);
   widthRange.onchange=()=>{ applyWidth(widthRange.value); scheduleDraft(); };
+
+  // page width grip: drag the right edge of the page, the same way the grip below it sets the height.
+  // The width is set from where the cursor is against the page's real right edge on every move, so
+  // the grip stays under the pointer whether the page is centred in the window or overflowing it.
+  (function(){
+    const inner=document.querySelector('.frame-inner');
+    const grip=document.createElement('div'); grip.className='width-handle';
+    grip.title='Drag to change page width'; grip.innerHTML='<i></i><i></i>';
+    inner.appendChild(grip);
+    grip.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const grab=frameEl.getBoundingClientRect().right-e.clientX;   // where on the grip it was picked up
+      function mv(ev){
+        const right=frameEl.getBoundingClientRect().right;
+        applyWidth(pageW+(ev.clientX+grab-right)/zoomScale,false);
+      }
+      function up(){
+        document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up);
+        applyWidth(pageW); scheduleDraft();
+      }
+      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+    });
+  })();
 
   // saving: IndexedDB (room for hundreds of MB) with a localStorage fallback
   const SAVES_KEY='galactic-affairs-blank-saves';
