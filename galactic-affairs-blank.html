@@ -21,14 +21,16 @@
       radial-gradient(1000px 820px at 112% 18%, rgba(74,216,255,.07), transparent 55%),
       radial-gradient(900px 720px at 88% 118%, rgba(230,185,74,.06), transparent 55%),
       radial-gradient(1500px 1100px at 50% 46%, #071726, #03101d 68%, #01070d);
-    position:relative;overflow-x:hidden;
+    position:relative;overflow-x:auto;
     font-family:'Saira',sans-serif;color:var(--text);
     min-height:100vh;padding:28px 16px 60px;
-    display:flex;flex-direction:column;align-items:center;gap:18px;
+    display:flex;flex-direction:column;align-items:center;align-items:safe center;gap:18px;
   }
+  /* A page wider than the window scrolls sideways rather than being squashed or clipped: the
+     frame is never capped, and "safe center" keeps its left edge reachable when it overflows. */
 
   .toolbar{
-    width:var(--page-w,900px);max-width:100%;background:rgba(10,31,51,.7);
+    width:var(--toolbar-w,900px);max-width:100%;background:rgba(10,31,51,.7);
     border:1px solid var(--line);border-radius:10px;padding:10px 14px;
     font-family:'Chakra Petch',sans-serif;font-size:13px;color:var(--text-dim);
     display:flex;align-items:center;gap:8px 0;flex-wrap:wrap;
@@ -110,7 +112,7 @@
   .toast button:hover{background:rgba(74,216,255,.3);}
 
   .frame{
-    width:var(--page-w,900px);max-width:100%;background:var(--cyan);
+    width:var(--page-w,900px);background:var(--cyan);
     clip-path:polygon(var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)),0 var(--chamfer));
     padding:2.5px;filter:drop-shadow(0 0 14px rgba(74,216,255,.45)) drop-shadow(0 0 2px rgba(74,216,255,.8));
   }
@@ -568,12 +570,15 @@
   const WIDTH_MIN=900, WIDTH_MAX=1400;
   let pageW=WIDTH_MIN;
   const widthRange=document.getElementById('widthRange'), widthReadout=document.getElementById('widthReadout');
-  function applyWidth(w){
+  // The toolbar only follows the page width once the slider is released. While dragging, a
+  // toolbar that reflows under the cursor moves the slider itself, which made it feel broken.
+  function applyWidth(w,settled){
     pageW=Math.max(WIDTH_MIN,Math.min(WIDTH_MAX,Math.round((parseInt(w,10)||WIDTH_MIN)/50)*50));
     document.body.style.setProperty('--page-w',pageW+'px');
+    if(settled!==false) document.body.style.setProperty('--toolbar-w',pageW+'px');
     widthRange.value=pageW; widthReadout.textContent=pageW+' px';
   }
-  widthRange.oninput=()=>applyWidth(widthRange.value);
+  widthRange.oninput=()=>applyWidth(widthRange.value,false);
   widthRange.onchange=()=>{ applyWidth(widthRange.value); scheduleDraft(); };
 
   // saving: IndexedDB (room for hundreds of MB) with a localStorage fallback
