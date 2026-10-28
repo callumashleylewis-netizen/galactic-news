@@ -442,7 +442,8 @@
     clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),ms||2200);
   }
 
-  // A new bulletin gets this week's Monday in its "Week of" field; anything already typed is left alone.
+  // The "Week of" field always opens on this week's Monday. Only a plain "Week of DD/MM" is updated,
+  // so any other wording someone typed is left alone.
   function weekLabel(){
     const d=new Date(), p=n=>String(n).padStart(2,'0');
     d.setDate(d.getDate()-((d.getDay()+6)%7));
@@ -450,7 +451,11 @@
   }
   function fillWeek(){
     const w=editableEls()[2];                                  // 0 story by, 1 issue, 2 week
-    if(w && w.textContent.trim()==='Week of 00/00'){ w.textContent=weekLabel(); lsSet(DRAFT_KEY,captureState()); }
+    if(!w) return;
+    const now=weekLabel(), was=w.textContent.trim();
+    if(was===now || !/^Week of \d{1,2}\/\d{1,2}$/.test(was)) return;
+    w.textContent=now; lsSet(DRAFT_KEY,captureState());
+    if(was!=='Week of 00/00') toast('Week updated to '+now.slice(8)+' (was '+was.slice(8)+'). Click the date to change it', 5000);
   }
 
   // Saves only live in this browser, so nudge for a draft file if there hasn't been one for a week.
