@@ -294,11 +294,15 @@
 
 
   <div class="toolbar">
-    <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. When you're ready, click <b>Export PNG</b> to save the bulletin as an image at a fixed 1200 px width, so every issue comes out the same size. Or use <b>&minus; / +</b> to scale up, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back.</div>
+    <div class="hint"><b>How to use:</b> click any text to edit it and type your weekly content. When you're ready, click <b>Export PNG</b> to save the bulletin as an image at a fixed 1200 px width, so every issue comes out the same size. Or use <b>&minus; / +</b> to scale up, click <b>Clean view</b> &mdash; the whole toolbar disappears so it can't end up in your shot &mdash; then snip around the bulletin (Windows: <b>Win + Shift + S</b>). A small <b>Edit</b> button, top-left, brings the toolbar back. <b>Download draft</b> saves the bulletin to a file you can send to another Tribune member, <b>Load draft</b> opens one, and <b>Export text</b> copies the bulletin's text for the archive.</div>
     <span class="zoomctl"><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button><span id="zoomReadout">100%</span><button id="zoomIn" type="button" aria-label="Zoom in">+</button></span>
     <button id="saveBtn" type="button">Save</button>
     <button id="savesBtn" type="button">Saves</button>
+    <button id="draftDownBtn" type="button" title="Save the bulletin to a file you can send to someone">Download draft</button>
+    <button id="draftLoadBtn" type="button" title="Open a bulletin draft file from someone else">Load draft</button>
     <button id="exportPngBtn" type="button" title="Save the bulletin as an image, always 1200 px wide">Export PNG</button>
+    <button id="exportTextBtn" type="button" title="Copy the bulletin's text, for the archive">Export text</button>
+    <input id="draftInput" type="file" accept=".gadraft,.json" hidden>
     <button id="hideBtn">Clean view</button>
   </div>
   <button id="showBtn" class="reopen" type="button">&#9998; Edit</button>
@@ -334,7 +338,7 @@
       <div class="lead">
         <h2 contenteditable="true">Note From Our Editors</h2>
         <p contenteditable="true" data-ph="[Input personal message]"></p>
-        <p contenteditable="true">The Assembly Tribune is always looking for new additions. Interested? Join the Librarians' Assembly today, any info can be found in the channel #recruitment within the communications server! For further information, you can tag me and ask for guidance.</p>
+        <p contenteditable="true">The Assembly Tribune is always looking for new additions. Interested? Join the Librarians' Assembly today, any info can be found in the #branches forum within the communications server! For further information, you can tag me and ask for guidance.</p>
       </div>
 
       <div class="cols">
@@ -432,11 +436,26 @@
   const DEFAULT_STATE=captureState();
 
   let toastTimer=null;
-  function toast(msg){
+  function toast(msg,ms){
     const t=document.getElementById('toast');
     t.textContent=msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),ms||2200);
   }
+
+  // A new bulletin gets this week's Monday in its "Week of" field; anything already typed is left alone.
+  function weekLabel(){
+    const d=new Date(), p=n=>String(n).padStart(2,'0');
+    d.setDate(d.getDate()-((d.getDay()+6)%7));
+    return 'Week of '+p(d.getDate())+'/'+p(d.getMonth()+1);
+  }
+  function fillWeek(){
+    const w=editableEls()[2];                                  // 0 story by, 1 issue, 2 week
+    if(w && w.textContent.trim()==='Week of 00/00'){ w.textContent=weekLabel(); lsSet(DRAFT_KEY,captureState()); }
+  }
+
+  // Saves only live in this browser, so nudge for a draft file if there hasn't been one for a week.
+  const BACKUP_KEY='galactic-affairs-lastbackup';
+  function backupDue(){ const t=lsGet(BACKUP_KEY); return !t || Date.now()-t>7*86400000; }
 
   function dateLabel(d){
     const today=new Date(); today.setHours(0,0,0,0);
@@ -476,7 +495,11 @@
     const now=new Date();
     const name='Bulletin — '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureState() });
-    if(lsSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
+    if(lsSet(SAVES_KEY,saves)){
+      renderSaves();
+      if(backupDue()) toast('Saved in this browser only. Click Download draft now and then to keep a backup copy', 5000);
+      else toast('Saved');
+    }
     else { toast('Save failed — storage may be full'); }
   }
 
@@ -494,7 +517,7 @@
     const saves=lsGet(SAVES_KEY)||[];
     if(btn.getAttribute('data-act')==='load'){
       const it=saves.find(s=>s.id===id);
-      if(it && restoreState(it.data)){ lsSet(DRAFT_KEY,it.data); closeSaves(); toast('Loaded'); }
+      if(it && restoreState(it.data)){ lsSet(DRAFT_KEY,it.data); fillWeek(); closeSaves(); toast('Loaded'); }
       else { toast("Couldn't load this save"); }
     } else {
       lsSet(SAVES_KEY, saves.filter(s=>s.id!==id)); renderSaves();
@@ -503,7 +526,7 @@
 
   document.getElementById('freshBtn').onclick=()=>{
     if(!confirm('Start a fresh bulletin? Your current unsaved work will be cleared. Saved bulletins are kept.')) return;
-    restoreState(DEFAULT_STATE); lsSet(DRAFT_KEY,DEFAULT_STATE); closeSaves(); toast('Fresh bulletin');
+    restoreState(DEFAULT_STATE); lsSet(DRAFT_KEY,DEFAULT_STATE); fillWeek(); closeSaves(); toast('Fresh bulletin');
   };
 
   // auto-draft
@@ -515,7 +538,7 @@
   window.addEventListener('beforeunload',()=>lsSet(DRAFT_KEY,captureState()));
 
   // restore last draft
-  (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); })();
+  (function(){ const draft=lsGet(DRAFT_KEY); if(draft) restoreState(draft); fillWeek(); })();
 
   // ---- Export PNG (same approach as the blank canvas) ----
   (function(){
@@ -646,7 +669,66 @@
         btn.disabled=false;
       }
     }
+    function htmlToText(html){
+      const d=document.createElement('div'); d.innerHTML=html||'';
+      return (d.innerText||d.textContent||'').replace(/ /g,' ').replace(/[ \t]+\n/g,'\n').trim();
+    }
+
+    // The bulletin's text in reading order, with each statistic's division name, ready to paste into the archive.
+    function exportText(){
+      const f=Array.from(editableEls()).map(el=>htmlToText(el.innerHTML));
+      const meta=[];
+      if(f[0] && !/^_+$/.test(f[0])) meta.push('Story by: '+f[0]);
+      if(f[1] && f[1]!=='000') meta.push('Issue '+f[1]);
+      if(f[2] && f[2]!=='Week of 00/00') meta.push(f[2]);
+      const items=[];
+      document.querySelectorAll('.frame .masthead, .frame .subhead, .frame .lead h2, .frame .lead p, .frame .col h3, .frame .col .grp, .frame .col .row').forEach(el=>{
+        let text=htmlToText(el.innerHTML);
+        const kind=el.classList.contains('row')?'row':(el.classList.contains('grp')?'grp':(el.tagName==='H3'?'h3':'text'));
+        if(kind==='row' && text) text=(el.dataset.label||'')+text;
+        if(text) items.push({kind,text});
+      });
+      const lines=[]; if(meta.length) lines.push(meta.join(' | '),'');
+      items.forEach((it,i)=>{
+        if(it.kind==='grp' && !(items[i+1] && items[i+1].kind==='row')) return;   // a council with nothing filled in is left out
+        if(it.kind==='h3' || it.kind==='grp') lines.push('');
+        lines.push(it.text);
+      });
+      const full=lines.join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
+      const words=full.split(/\s+/).filter(Boolean).length;
+      const write=(navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(full) : Promise.reject();
+      write.then(()=>toast('Copied '+words+' words to the clipboard'))
+           .catch(()=>{ downloadBlob(new Blob([full],{type:'text/plain'}),'galactic-affairs-bulletin-'+issueLabel()+'.txt'); toast('Saved as a text file'); });
+    }
+
+    // Drafts as files, so a bulletin can change hands or be kept as a backup.
+    function downloadDraft(){
+      const doc={ app:'galactic-affairs-bulletin', v:1, saved:new Date().toISOString(), fields:captureState() };
+      downloadBlob(new Blob([JSON.stringify(doc)],{type:'application/octet-stream'}),'galactic-affairs-bulletin-draft-'+fileStamp()+'.gadraft');
+      lsSet(BACKUP_KEY,Date.now());
+      toast('Draft saved as a file');
+    }
+    function loadDraftFile(file){
+      if(!file) return;
+      const r=new FileReader();
+      r.onload=()=>{
+        let doc=null; try{ doc=JSON.parse(r.result); }catch(e){}
+        if(doc && Array.isArray(doc.pages)){ toast("That's a Blank Canvas draft, open it in the Blank Canvas"); return; }
+        if(!doc || !Array.isArray(doc.fields)){ toast("That isn't a Galactic Affairs draft"); return; }
+        if(!confirm('Load this draft? It replaces the bulletin currently open. Saved bulletins are kept.')) return;
+        if(restoreState(doc.fields)){ lsSet(DRAFT_KEY,captureState()); fillWeek(); toast('Draft loaded'); }
+        else toast("Couldn't read that draft");
+      };
+      r.onerror=()=>toast("Couldn't read that file");
+      r.readAsText(file);
+    }
+
+    const draftInput=document.getElementById('draftInput');
     btn.onclick=exportPng;
+    document.getElementById('exportTextBtn').onclick=exportText;
+    document.getElementById('draftDownBtn').onclick=downloadDraft;
+    document.getElementById('draftLoadBtn').onclick=()=>draftInput.click();
+    draftInput.onchange=()=>{ loadDraftFile(draftInput.files[0]); draftInput.value=''; };
   })();
 
   // ambient backdrop

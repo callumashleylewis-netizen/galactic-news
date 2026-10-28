@@ -743,7 +743,23 @@
     pageNext.disabled=current===pages.length-1;
     pageAdd.disabled=pages.length>=MAX_PAGES;
     pageDel.disabled=pages.length<=1;
+    fillWeek();
   }
+
+  // A new page gets this week's Monday in its "Week of" field; anything already typed is left alone.
+  function weekLabel(){
+    const d=new Date(), p=n=>String(n).padStart(2,'0');
+    d.setDate(d.getDate()-((d.getDay()+6)%7));
+    return 'Week of '+p(d.getDate())+'/'+p(d.getMonth()+1);
+  }
+  function fillWeek(){
+    const w=fixedFieldEls()[2];                                // 0 story by, 1 issue, 2 week
+    if(w && w.textContent.trim()==='Week of 00/00') w.textContent=weekLabel();
+  }
+
+  // Saves only live in this browser, so nudge for a draft file if there hasn't been one for a week.
+  const BACKUP_KEY='galactic-affairs-blank-lastbackup';
+  function backupDue(){ const t=lsGet(BACKUP_KEY); return !t || Date.now()-t>7*86400000; }
   function gotoPage(i){
     i=Math.max(0,Math.min(pages.length-1,i));
     if(i===current) return;
@@ -814,7 +830,11 @@
     const now=new Date();
     const name='Bulletin, '+now.toLocaleDateString(undefined,{day:'numeric',month:'short'})+', '+now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     saves.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), name, ts:Date.now(), data:captureDoc() });
-    if(await storeSet(SAVES_KEY,saves)){ renderSaves(); toast('Saved'); }
+    if(await storeSet(SAVES_KEY,saves)){
+      renderSaves();
+      if(backupDue()) toast('Saved in this browser only. Click Download draft now and then to keep a backup copy', 5000);
+      else toast('Saved');
+    }
     else { toast('Storage is full or blocked here, try fewer or smaller images'); }
   }
 
@@ -1063,6 +1083,7 @@
       const doc=captureDoc(); doc.app='galactic-affairs-blank'; doc.saved=new Date().toISOString();
       // .gadraft rather than .json, so Windows shows it as a Galactic Affairs file and not whatever app owns .json
       downloadBlob(new Blob([JSON.stringify(doc)],{type:'application/octet-stream'}),'galactic-affairs-draft-'+fileStamp()+'.gadraft');
+      lsSet(BACKUP_KEY,Date.now());
       toast('Draft saved as a file');
     }
     function loadDraftFile(file){
@@ -1070,6 +1091,7 @@
       const r=new FileReader();
       r.onload=()=>{
         let doc=null; try{ doc=JSON.parse(r.result); }catch(e){}
+        if(doc && doc.app==='galactic-affairs-bulletin'){ toast("That's a Weekly Bulletin draft, open it in the Weekly Bulletin"); return; }
         if(!doc || !(Array.isArray(doc.pages) || Array.isArray(doc.fields))){ toast("That isn't a Galactic Affairs draft"); return; }
         if(!confirm('Load this draft? It replaces every page currently open. Saved bulletins are kept.')) return;
         if(restoreDoc(doc)){ storeSet(DRAFT_KEY,captureDoc()); toast('Draft loaded, '+pages.length+(pages.length===1?' page':' pages')); }
